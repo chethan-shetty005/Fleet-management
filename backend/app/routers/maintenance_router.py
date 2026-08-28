@@ -10,14 +10,16 @@ router = APIRouter(prefix="/maintenance", tags=["Maintenance"])
 
 @router.get("", response_model=List[MaintenanceResponse], status_code=status.HTTP_200_OK)
 def list_maintenance_logs(
-    vehicle_id: Optional[int] = Query(None, description="Filter logs by vehicle ID"),
+    vehicle_id: Optional[str] = Query(None, description="Filter logs by vehicle string ID (v_id)"),
+    v_id: Optional[str] = Query(None, description="Filter logs by vehicle string ID (v_id)"),
     status_filter: Optional[str] = Query(None, alias="status", description="Filter logs by status (Scheduled, In Progress, Completed)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db)
 ):
     """List all maintenance logs with optional vehicle or status filter."""
-    return maintenance_service.get_maintenance_logs(db, vehicle_id=vehicle_id, status_filter=status_filter, skip=skip, limit=limit)
+    target_vehicle_id = v_id or vehicle_id
+    return maintenance_service.get_maintenance_logs(db, vehicle_id=target_vehicle_id, status_filter=status_filter, skip=skip, limit=limit)
 
 @router.get("/{log_id}", response_model=MaintenanceResponse, status_code=status.HTTP_200_OK)
 def get_maintenance_log(log_id: int, db: Session = Depends(get_db)):

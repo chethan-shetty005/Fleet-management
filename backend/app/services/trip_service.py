@@ -9,12 +9,12 @@ from app.schemas.trip import TripCreate, TripUpdate
 
 def get_trips(
     db: Session,
-    vehicle_id: Optional[int] = None,
+    vehicle_id: Optional[str] = None,
     status_filter: Optional[str] = None,
     skip: int = 0,
     limit: int = 100
 ) -> List[Trip]:
-    """Retrieve all trips with optional filtering by vehicle_id or status."""
+    """Retrieve all trips with optional filtering by string vehicle_id (v_id) or status."""
     query = select(Trip)
     if vehicle_id:
         query = query.where(Trip.vehicle_id == vehicle_id)
@@ -29,12 +29,13 @@ def get_trip_by_id(db: Session, trip_id: int) -> Optional[Trip]:
 
 def create_trip(db: Session, trip_in: TripCreate) -> Trip:
     """Dispatch/create a new trip after verifying assigned vehicle existence."""
+    v_id = trip_in.vehicle_id or trip_in.v_id
     # Verify vehicle exists
-    vehicle = db.get(Vehicle, trip_in.vehicle_id)
+    vehicle = db.get(Vehicle, v_id)
     if not vehicle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Vehicle with ID {trip_in.vehicle_id} not found."
+            detail=f"Vehicle with ID '{v_id}' not found."
         )
 
     # Check duplicate trip number
@@ -45,7 +46,12 @@ def create_trip(db: Session, trip_in: TripCreate) -> Trip:
             detail=f"Trip with trip_number '{trip_in.trip_number}' already exists."
         )
 
-    db_trip = Trip(**trip_in.model_dump())
+    trip_data = trip_in.model_dump()
+    trip_data["vehicle_id"] = v_id
+    if "v_id" in trip_data:
+        del trip_data["v_id"]
+
+    db_trip = Trip(**trip_data)
     db.add(db_trip)
     db.commit()
     db.refresh(db_trip)
@@ -62,29 +68,40 @@ def update_trip(db: Session, trip_id: int, trip_in: TripUpdate) -> Trip:
 
     update_data = trip_in.model_dump(exclude_unset=True)
 
-    # If vehicle_id is updated, verify it exists
-    if "vehicle_id" in update_data and update_data["vehicle_id"] != db_trip.vehicle_id:
-        vehicle = db.get(Vehicle, update_data["vehicle_id"])
-        if not vehicle:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Vehicle with ID {update_data['vehicle_id']} not found."
-            )
+    new_v_id = update_data.get("vehicle_id") or update_data.get("v_id")
+    if new_v_id:
+        if new_v_id != db_trip.vehicle_id:
+            vehicle = db.get(Vehicle, new_v_id)
+            if not vehicle:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Vehicle with ID '{new_v_id}' not found."
+                )
+            update_data["vehicle_id"] = new_v_id
+        else:
+            update_data.pop("vehicle_id", None)
+            
+    if "v_id" in update_data:
+        update_data.pop("v_id", None)
 
     # Check trip_number conflict if updated
-    if "trip_number" in update_data and update_data["trip_number"] != db_trip.trip_number:
-        existing = db.scalar(select(Trip).where(Trip.trip_number == update_data["trip_number"]))
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Trip with trip_number '{update_data['trip_number']}' already exists."
-            )
+    if "trip_number" in update_data:
+        if update_data["trip_number"] != db_trip.trip_number:
+            existing = db.scalar(select(Trip).where(Trip.trip_number == update_data["trip_number"]))
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Trip with trip_number '{update_data['trip_number']}' already exists."
+                )
+        else:
+            update_data.pop("trip_number", None)
 
     old_status = db_trip.status
     old_distance = db_trip.distance_miles
 
     for field, value in update_data.items():
-        setattr(db_trip, field, value)
+        if hasattr(db_trip, field) and value is not None:
+            setattr(db_trip, field, value)
 
     # Business Logic Rule: When a trip is marked Completed, update vehicle mileage
     new_status = db_trip.status
@@ -113,3 +130,4 @@ def delete_trip(db: Session, trip_id: int) -> None:
         )
     db.delete(db_trip)
     db.commit()
+

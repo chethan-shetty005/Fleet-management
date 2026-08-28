@@ -10,14 +10,16 @@ router = APIRouter(prefix="/trips", tags=["Trips"])
 
 @router.get("", response_model=List[TripResponse], status_code=status.HTTP_200_OK)
 def list_trips(
-    vehicle_id: Optional[int] = Query(None, description="Filter trips by vehicle ID"),
+    vehicle_id: Optional[str] = Query(None, description="Filter trips by vehicle string ID (v_id)"),
+    v_id: Optional[str] = Query(None, description="Filter trips by vehicle string ID (v_id)"),
     status_filter: Optional[str] = Query(None, alias="status", description="Filter trips by status (Scheduled, In Progress, Completed, Cancelled)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db)
 ):
     """List all trips with optional filtering by vehicle or status."""
-    return trip_service.get_trips(db, vehicle_id=vehicle_id, status_filter=status_filter, skip=skip, limit=limit)
+    target_vehicle_id = v_id or vehicle_id
+    return trip_service.get_trips(db, vehicle_id=target_vehicle_id, status_filter=status_filter, skip=skip, limit=limit)
 
 @router.get("/{trip_id}", response_model=TripResponse, status_code=status.HTTP_200_OK)
 def get_trip(trip_id: int, db: Session = Depends(get_db)):

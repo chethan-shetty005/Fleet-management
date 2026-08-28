@@ -23,41 +23,49 @@ def seed_database():
     try:
         print("Seeding Vehicles...")
         v1 = Vehicle(
+            v_id="VH001",
+            license_plate="KA01AB1234",
             vin="1FTFW1ED4MFC12345",
-            license_plate="FLT-101",
             make="Ford",
             model="F-150 Lightning",
             year=2023,
+            vehicle_type="Truck",
             fuel_type="Electric",
             status="Active",
             current_mileage=14250.0
         )
         v2 = Vehicle(
-            vin="1FUJA6CV8DL567890",
+            v_id="VH002",
             license_plate="FLT-202",
+            vin="1FUJA6CV8DL567890",
             make="Freightliner",
             model="Cascadia",
             year=2022,
+            vehicle_type="Tractor",
             fuel_type="Diesel",
             status="Active",
             current_mileage=87400.5
         )
         v3 = Vehicle(
-            vin="YV1A42CL9N1987654",
+            v_id="VH003",
             license_plate="FLT-303",
-            make="Volvo",
-            model="FH16",
+            vin="YV1A42CL9N1987654",
+            make="Caterpillar",
+            model="D8T",
             year=2021,
+            vehicle_type="Earth Mover",
             fuel_type="Diesel",
             status="Maintenance",
-            current_mileage=112000.0
+            current_mileage=11200.0
         )
         v4 = Vehicle(
-            vin="5YJSA1E28HF345678",
+            v_id="VH004",
             license_plate="FLT-404",
+            vin="5YJSA1E28HF345678",
             make="Tesla",
             model="Semi",
             year=2024,
+            vehicle_type="Truck",
             fuel_type="Electric",
             status="Active",
             current_mileage=5300.2
@@ -75,7 +83,7 @@ def seed_database():
         print("Seeding Trips...")
         t1 = Trip(
             trip_number="TRIP-1001",
-            vehicle_id=v1.id,
+            vehicle_id=v1.v_id,
             start_location="Chicago Depot",
             end_location="Milwaukee Distribution Center",
             start_time=datetime.utcnow() - timedelta(days=2),
@@ -86,7 +94,7 @@ def seed_database():
         )
         t2 = Trip(
             trip_number="TRIP-1002",
-            vehicle_id=v2.id,
+            vehicle_id=v2.v_id,
             start_location="Indianapolis Hub",
             end_location="Columbus Warehouse",
             start_time=datetime.utcnow() - timedelta(hours=5),
@@ -96,7 +104,7 @@ def seed_database():
         )
         t3 = Trip(
             trip_number="TRIP-1003",
-            vehicle_id=v4.id,
+            vehicle_id=v4.v_id,
             start_location="Detroit Plant",
             end_location="Cleveland Hub",
             start_time=datetime.utcnow() + timedelta(days=1),
@@ -109,7 +117,7 @@ def seed_database():
 
         print("Seeding Maintenance Logs...")
         m1 = MaintenanceLog(
-            vehicle_id=v3.id,
+            vehicle_id=v3.v_id,
             service_type="Engine Repair",
             description="Turbine injector service and coolant system flush",
             cost=1250.0,
@@ -118,7 +126,7 @@ def seed_database():
             performed_by="Volvo Heavy Diesel Repair"
         )
         m2 = MaintenanceLog(
-            vehicle_id=v1.id,
+            vehicle_id=v1.v_id,
             service_type="Tire Rotation",
             description="Standard 10,000 mile tire rotation and brake inspection",
             cost=120.0,

@@ -11,10 +11,10 @@ def get_fleet_overview(db: Session) -> FleetOverviewResponse:
     Calculate and aggregate total fleet performance metrics for dashboard KPI cards.
     """
     # Vehicles metrics
-    total_vehicles = db.scalar(select(func.count(Vehicle.id))) or 0
-    active_vehicles = db.scalar(select(func.count(Vehicle.id)).where(Vehicle.status == "Active")) or 0
-    maintenance_vehicles = db.scalar(select(func.count(Vehicle.id)).where(Vehicle.status == "Maintenance")) or 0
-    out_of_service_vehicles = db.scalar(select(func.count(Vehicle.id)).where(Vehicle.status == "Out of Service")) or 0
+    total_vehicles = db.scalar(select(func.count(Vehicle.v_id))) or 0
+    active_vehicles = db.scalar(select(func.count(Vehicle.v_id)).where(Vehicle.status == "Active")) or 0
+    maintenance_vehicles = db.scalar(select(func.count(Vehicle.v_id)).where(Vehicle.status == "Maintenance")) or 0
+    out_of_service_vehicles = db.scalar(select(func.count(Vehicle.v_id)).where(Vehicle.status == "Out of Service")) or 0
 
     # Trips metrics
     total_trips = db.scalar(select(func.count(Trip.id))) or 0

@@ -16,7 +16,15 @@ class MaintenanceLog(Base):
     __tablename__ = "maintenance_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    vehicle_id: Mapped[int] = mapped_column(Integer, ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False)
+    vehicle_id: Mapped[str] = mapped_column(String(50), ForeignKey("vehicles.v_id", ondelete="CASCADE"), nullable=False)
+    
+    @property
+    def v_id(self) -> str:
+        return self.vehicle_id
+
+    @v_id.setter
+    def v_id(self, value: str):
+        self.vehicle_id = value
     
     service_type: Mapped[str] = mapped_column(String(50), nullable=False)  # Oil Change, Tire Rotation, Brake Service, Engine Repair, Inspection
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

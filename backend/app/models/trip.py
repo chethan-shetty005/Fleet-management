@@ -17,7 +17,15 @@ class Trip(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     trip_number: Mapped[str] = mapped_column(String(30), unique=True, index=True, nullable=False)
-    vehicle_id: Mapped[int] = mapped_column(Integer, ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False)
+    vehicle_id: Mapped[str] = mapped_column(String(50), ForeignKey("vehicles.v_id", ondelete="CASCADE"), nullable=False)
+    
+    @property
+    def v_id(self) -> str:
+        return self.vehicle_id
+
+    @v_id.setter
+    def v_id(self, value: str):
+        self.vehicle_id = value
     
     start_location: Mapped[str] = mapped_column(String(100), nullable=False)
     end_location: Mapped[str] = mapped_column(String(100), nullable=False)
