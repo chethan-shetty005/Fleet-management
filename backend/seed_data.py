@@ -82,41 +82,42 @@ def seed_database():
 
         print("Seeding Trips...")
         t1 = Trip(
-            trip_number="TRIP-1001",
+            trip_number="KA-TRIP-1001",
             vehicle_id=v1.v_id,
-            start_location="Chicago Depot",
-            end_location="Milwaukee Distribution Center",
+            start_location="Bengaluru Hub",
+            end_location="Mysuru Distribution Center",
             start_time=datetime.utcnow() - timedelta(days=2),
             end_time=datetime.utcnow() - timedelta(days=2, hours=-3),
             status="Completed",
-            distance_miles=92.5,
-            fuel_consumed_gallons=0.0  # Electric
+            distance_km=145.0,
+            fuel_consumed_liters=0.0  # Electric
         )
         t2 = Trip(
-            trip_number="TRIP-1002",
+            trip_number="MH-TRIP-1002",
             vehicle_id=v2.v_id,
-            start_location="Indianapolis Hub",
-            end_location="Columbus Warehouse",
+            start_location="Mumbai Freight Hub",
+            end_location="Pune Industrial Yard",
             start_time=datetime.utcnow() - timedelta(hours=5),
             status="In Progress",
-            distance_miles=175.0,
-            fuel_consumed_gallons=25.0
+            distance_km=150.0,
+            fuel_consumed_liters=35.0
         )
         t3 = Trip(
-            trip_number="TRIP-1003",
+            trip_number="DL-TRIP-1003",
             vehicle_id=v4.v_id,
-            start_location="Detroit Plant",
-            end_location="Cleveland Hub",
+            start_location="Delhi Logistics Center",
+            end_location="Jaipur Distribution Hub",
             start_time=datetime.utcnow() + timedelta(days=1),
             status="Scheduled",
-            distance_miles=170.0,
-            fuel_consumed_gallons=0.0
+            distance_km=280.0,
+            fuel_consumed_liters=0.0
         )
 
         db.add_all([t1, t2, t3])
 
         print("Seeding Maintenance Logs...")
         m1 = MaintenanceLog(
+            log_id="MNT-1001",
             vehicle_id=v3.v_id,
             service_type="Engine Repair",
             description="Turbine injector service and coolant system flush",
@@ -126,9 +127,10 @@ def seed_database():
             performed_by="Volvo Heavy Diesel Repair"
         )
         m2 = MaintenanceLog(
+            log_id="MNT-1002",
             vehicle_id=v1.v_id,
             service_type="Tire Rotation",
-            description="Standard 10,000 mile tire rotation and brake inspection",
+            description="Standard 10,000 km tire rotation and brake inspection",
             cost=120.0,
             service_date=date.today() - timedelta(days=15),
             status="Completed",

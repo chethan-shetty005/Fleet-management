@@ -20,8 +20,8 @@ def get_fleet_overview(db: Session) -> FleetOverviewResponse:
     total_trips = db.scalar(select(func.count(Trip.id))) or 0
     in_progress_trips = db.scalar(select(func.count(Trip.id)).where(Trip.status == "In Progress")) or 0
     completed_trips = db.scalar(select(func.count(Trip.id)).where(Trip.status == "Completed")) or 0
-    total_distance_miles = db.scalar(select(func.sum(Trip.distance_miles))) or 0.0
-    total_fuel_consumed_gallons = db.scalar(select(func.sum(Trip.fuel_consumed_gallons))) or 0.0
+    total_distance_km = db.scalar(select(func.sum(Trip.distance_km))) or 0.0
+    total_fuel_consumed_liters = db.scalar(select(func.sum(Trip.fuel_consumed_liters))) or 0.0
 
     # Maintenance metrics
     total_maintenance_cost = db.scalar(select(func.sum(MaintenanceLog.cost))) or 0.0
@@ -37,8 +37,10 @@ def get_fleet_overview(db: Session) -> FleetOverviewResponse:
         total_trips=total_trips,
         in_progress_trips=in_progress_trips,
         completed_trips=completed_trips,
-        total_distance_miles=round(total_distance_miles, 2),
-        total_fuel_consumed_gallons=round(total_fuel_consumed_gallons, 2),
+        total_distance_km=round(total_distance_km, 2),
+        total_fuel_consumed_liters=round(total_fuel_consumed_liters, 2),
+        total_distance_miles=round(total_distance_km, 2),
+        total_fuel_consumed_gallons=round(total_fuel_consumed_liters, 2),
         total_maintenance_cost=round(total_maintenance_cost, 2),
         pending_maintenance_count=pending_maintenance_count
     )

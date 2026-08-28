@@ -102,36 +102,55 @@ def test_full_flow():
 
 
     print("\n--- 4. Trips API ---")
-    # POST create trip with string vehicle_id
+    # POST create trip with Indian vehicle structure and string trip_number
     new_t = {
-        "trip_number": "TRIP-TEST-001",
+        "trip_number": "KA-TRIP-9999",
         "vehicle_id": created_v_id,
-        "start_location": "Depot Alpha",
-        "end_location": "Depot Beta",
+        "start_location": "Bengaluru Freight Hub",
+        "end_location": "Chennai Logistics Yard",
         "status": "In Progress",
-        "distance_miles": 50.0,
-        "fuel_consumed_gallons": 0.0
+        "distance_km": 50.0,
+        "fuel_consumed_liters": 10.0
     }
     res = client.post("/api/v1/trips", json=new_t)
     assert res.status_code == 201
     created_t = res.json()
     created_t_id = created_t["id"]
+    created_trip_num = created_t["trip_number"]
+    assert isinstance(created_t_id, str)
+    assert isinstance(created_t["trip_id"], str)
+    assert created_t["trip_number"] == "KA-TRIP-9999"
     assert created_t["v_id"] == created_v_id
     assert created_t["vehicle_id"] == created_v_id
-    print(f"✅ POST trip created with vehicle_id='{created_v_id}'")
+    assert created_t["distance_km"] == 50.0
+    assert created_t["fuel_consumed_liters"] == 10.0
+    print(f"✅ POST trip created with trip_number='KA-TRIP-9999' and string id='{created_t_id}'")
 
-    # PUT complete trip (verifies auto-update of vehicle mileage)
-    res = client.put(f"/api/v1/trips/{created_t_id}", json={"status": "Completed", "distance_miles": 50.0})
+    # GET trip by string trip_number
+    res = client.get("/api/v1/trips/KA-TRIP-9999")
+    assert res.status_code == 200
+    assert res.json()["trip_number"] == "KA-TRIP-9999"
+    print("✅ GET trip by string trip_number 'KA-TRIP-9999' passed")
+
+    # GET trip by string ID
+    res = client.get(f"/api/v1/trips/{created_t_id}")
+    assert res.status_code == 200
+    assert res.json()["trip_number"] == "KA-TRIP-9999"
+    print(f"✅ GET trip by string ID '{created_t_id}' passed")
+
+    # PUT complete trip (verifies auto-update of vehicle mileage in km)
+    res = client.put(f"/api/v1/trips/KA-TRIP-9999", json={"status": "Completed", "distance_km": 50.0})
     assert res.status_code == 200
     assert res.json()["status"] == "Completed"
     
     # Check vehicle mileage updated from 100.0 -> 150.0
     res = client.get(f"/api/v1/vehicles/{created_v_id}")
     assert res.json()["current_mileage"] == 150.0
-    print("✅ PUT trip completed & auto-updated vehicle mileage to 150.0")
+    print("✅ PUT trip completed by trip_number & auto-updated vehicle mileage to 150.0")
 
     print("\n--- 5. Maintenance API ---")
     new_m = {
+        "log_id": "MNT-9999",
         "vehicle_id": created_v_id,
         "service_type": "Battery Check",
         "description": "Routine health check for EV battery",
@@ -143,13 +162,28 @@ def test_full_flow():
     assert res.status_code == 201
     created_m = res.json()
     created_m_id = created_m["id"]
+    created_log_id = created_m["log_id"]
+    assert isinstance(created_m_id, str)
+    assert created_log_id == "MNT-9999"
     assert created_m["vehicle_id"] == created_v_id
-    print(f"✅ POST maintenance created ID {created_m_id}")
+    print(f"✅ POST maintenance created with log_id='MNT-9999' and string id='{created_m_id}'")
 
-    # DELETE maintenance log
-    res = client.delete(f"/api/v1/maintenance/{created_m_id}")
+    # GET maintenance by string log_id
+    res = client.get("/api/v1/maintenance/MNT-9999")
+    assert res.status_code == 200
+    assert res.json()["log_id"] == "MNT-9999"
+    print("✅ GET maintenance by string log_id 'MNT-9999' passed")
+
+    # GET maintenance by string ID
+    res = client.get(f"/api/v1/maintenance/{created_m_id}")
+    assert res.status_code == 200
+    assert res.json()["log_id"] == "MNT-9999"
+    print(f"✅ GET maintenance by string ID '{created_m_id}' passed")
+
+    # DELETE maintenance log by log_id string
+    res = client.delete("/api/v1/maintenance/MNT-9999")
     assert res.status_code == 204
-    print("✅ DELETE maintenance log passed")
+    print("✅ DELETE maintenance log by log_id 'MNT-9999' passed")
 
     print("\n--- 6. Analytics API ---")
     res = client.get("/api/v1/analytics/overview")

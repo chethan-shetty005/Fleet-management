@@ -9,13 +9,16 @@ from app.schemas.trip import TripCreate, TripUpdate
 
 def get_trips(
     db: Session,
+    trip_number: Optional[str] = None,
     vehicle_id: Optional[str] = None,
     status_filter: Optional[str] = None,
     skip: int = 0,
     limit: int = 100
 ) -> List[Trip]:
-    """Retrieve all trips with optional filtering by string vehicle_id (v_id) or status."""
+    """Retrieve all trips with optional filtering by string trip_number, vehicle_id (v_id) or status."""
     query = select(Trip)
+    if trip_number:
+        query = query.where(Trip.trip_number.ilike(f"%{trip_number}%"))
     if vehicle_id:
         query = query.where(Trip.vehicle_id == vehicle_id)
     if status_filter:
@@ -23,9 +26,18 @@ def get_trips(
     query = query.offset(skip).limit(limit)
     return list(db.scalars(query).all())
 
-def get_trip_by_id(db: Session, trip_id: int) -> Optional[Trip]:
-    """Retrieve a single trip by ID."""
-    return db.get(Trip, trip_id)
+def get_trip_by_id(db: Session, trip_id: str) -> Optional[Trip]:
+    """Retrieve a single trip by trip_number string or ID string."""
+    # First try exact lookup by string trip_number
+    trip = db.scalar(select(Trip).where(Trip.trip_number == str(trip_id)))
+    if trip:
+        return trip
+    # Fallback to integer primary key ID lookup if integer string
+    try:
+        int_id = int(trip_id)
+        return db.get(Trip, int_id)
+    except (ValueError, TypeError):
+        return None
 
 def create_trip(db: Session, trip_in: TripCreate) -> Trip:
     """Dispatch/create a new trip after verifying assigned vehicle existence."""
@@ -57,13 +69,13 @@ def create_trip(db: Session, trip_in: TripCreate) -> Trip:
     db.refresh(db_trip)
     return db_trip
 
-def update_trip(db: Session, trip_id: int, trip_in: TripUpdate) -> Trip:
-    """Update a trip record and automatically adjust vehicle current_mileage if completed."""
+def update_trip(db: Session, trip_id: str, trip_in: TripUpdate) -> Trip:
+    """Update a trip record (accepts trip_number string or ID string) and auto-adjust vehicle mileage if completed."""
     db_trip = get_trip_by_id(db, trip_id)
     if not db_trip:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Trip with ID {trip_id} not found."
+            detail=f"Trip '{trip_id}' not found."
         )
 
     update_data = trip_in.model_dump(exclude_unset=True)
@@ -97,7 +109,7 @@ def update_trip(db: Session, trip_id: int, trip_in: TripUpdate) -> Trip:
             update_data.pop("trip_number", None)
 
     old_status = db_trip.status
-    old_distance = db_trip.distance_miles
+    old_distance = db_trip.distance_km
 
     for field, value in update_data.items():
         if hasattr(db_trip, field) and value is not None:
@@ -105,7 +117,7 @@ def update_trip(db: Session, trip_id: int, trip_in: TripUpdate) -> Trip:
 
     # Business Logic Rule: When a trip is marked Completed, update vehicle mileage
     new_status = db_trip.status
-    new_distance = db_trip.distance_miles
+    new_distance = db_trip.distance_km
     if new_status == "Completed":
         vehicle = db.get(Vehicle, db_trip.vehicle_id)
         if vehicle:
@@ -120,13 +132,13 @@ def update_trip(db: Session, trip_id: int, trip_in: TripUpdate) -> Trip:
     db.refresh(db_trip)
     return db_trip
 
-def delete_trip(db: Session, trip_id: int) -> None:
-    """Delete a trip by ID."""
+def delete_trip(db: Session, trip_id: str) -> None:
+    """Delete a trip by string trip_id or trip_number."""
     db_trip = get_trip_by_id(db, trip_id)
     if not db_trip:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Trip with ID {trip_id} not found."
+            detail=f"Trip '{trip_id}' not found."
         )
     db.delete(db_trip)
     db.commit()

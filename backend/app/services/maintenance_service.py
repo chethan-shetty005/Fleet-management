@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -9,13 +10,16 @@ from app.schemas.maintenance import MaintenanceCreate, MaintenanceUpdate
 
 def get_maintenance_logs(
     db: Session,
+    log_id: Optional[str] = None,
     vehicle_id: Optional[str] = None,
     status_filter: Optional[str] = None,
     skip: int = 0,
     limit: int = 100
 ) -> List[MaintenanceLog]:
-    """Retrieve all maintenance logs with optional string vehicle_id (v_id) or status filter."""
+    """Retrieve all maintenance logs with optional log_id string, vehicle_id (v_id), or status filter."""
     query = select(MaintenanceLog)
+    if log_id:
+        query = query.where(MaintenanceLog.log_id.ilike(f"%{log_id}%"))
     if vehicle_id:
         query = query.where(MaintenanceLog.vehicle_id == vehicle_id)
     if status_filter:
@@ -23,13 +27,22 @@ def get_maintenance_logs(
     query = query.offset(skip).limit(limit)
     return list(db.scalars(query).all())
 
-def get_maintenance_log_by_id(db: Session, log_id: int) -> Optional[MaintenanceLog]:
-    """Retrieve a single maintenance log by ID."""
-    return db.get(MaintenanceLog, log_id)
+def get_maintenance_log_by_id(db: Session, log_id: str) -> Optional[MaintenanceLog]:
+    """Retrieve a single maintenance log by string log_id or numeric ID string."""
+    # First try exact lookup by string log_id
+    log = db.scalar(select(MaintenanceLog).where(MaintenanceLog.log_id == str(log_id)))
+    if log:
+        return log
+    # Fallback to integer primary key ID lookup
+    try:
+        int_id = int(log_id)
+        return db.get(MaintenanceLog, int_id)
+    except (ValueError, TypeError):
+        return None
 
 def create_maintenance_log(db: Session, log_in: MaintenanceCreate) -> MaintenanceLog:
     """Create a new maintenance log record for a vehicle."""
-    v_id = log_in.vehicle_id or log_in.v_id
+    v_id = log_in.vehicle_id or getattr(log_in, "v_id", None)
     vehicle = db.get(Vehicle, v_id)
     if not vehicle:
         raise HTTPException(
@@ -42,6 +55,9 @@ def create_maintenance_log(db: Session, log_in: MaintenanceCreate) -> Maintenanc
     if "v_id" in log_data:
         del log_data["v_id"]
 
+    if not log_data.get("log_id"):
+        log_data["log_id"] = f"MNT-{uuid.uuid4().hex[:6].upper()}"
+
     db_log = MaintenanceLog(**log_data)
     
     # Business Logic Rule: If maintenance is "In Progress", set vehicle status to "Maintenance"
@@ -53,13 +69,13 @@ def create_maintenance_log(db: Session, log_in: MaintenanceCreate) -> Maintenanc
     db.refresh(db_log)
     return db_log
 
-def update_maintenance_log(db: Session, log_id: int, log_in: MaintenanceUpdate) -> MaintenanceLog:
-    """Update a maintenance log record and adjust vehicle status if maintenance completes."""
+def update_maintenance_log(db: Session, log_id: str, log_in: MaintenanceUpdate) -> MaintenanceLog:
+    """Update a maintenance log record (accepts string log_id or ID) and adjust vehicle status if completed."""
     db_log = get_maintenance_log_by_id(db, log_id)
     if not db_log:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Maintenance log with ID {log_id} not found."
+            detail=f"Maintenance log '{log_id}' not found."
         )
 
     update_data = log_in.model_dump(exclude_unset=True)
@@ -86,13 +102,13 @@ def update_maintenance_log(db: Session, log_id: int, log_in: MaintenanceUpdate) 
     db.refresh(db_log)
     return db_log
 
-def delete_maintenance_log(db: Session, log_id: int) -> None:
-    """Delete a maintenance log by ID."""
+def delete_maintenance_log(db: Session, log_id: str) -> None:
+    """Delete a maintenance log by string log_id or ID."""
     db_log = get_maintenance_log_by_id(db, log_id)
     if not db_log:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Maintenance log with ID {log_id} not found."
+            detail=f"Maintenance log '{log_id}' not found."
         )
     db.delete(db_log)
     db.commit()

@@ -16,6 +16,7 @@ class MaintenanceLog(Base):
     __tablename__ = "maintenance_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    log_id: Mapped[Optional[str]] = mapped_column(String(30), unique=True, index=True, nullable=True)
     vehicle_id: Mapped[str] = mapped_column(String(50), ForeignKey("vehicles.v_id", ondelete="CASCADE"), nullable=False)
     
     @property
