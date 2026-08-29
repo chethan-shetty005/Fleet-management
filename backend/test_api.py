@@ -168,6 +168,12 @@ def test_full_flow():
     assert created_m["vehicle_id"] == created_v_id
     print(f"✅ POST maintenance created with log_id='MNT-9999' and string id='{created_m_id}'")
 
+    # Test duplicate log_id handling (should return 400 Bad Request instead of 500)
+    res = client.post("/api/v1/maintenance", json=new_m)
+    assert res.status_code == 400
+    assert "already exists" in res.json()["detail"].lower()
+    print("✅ POST duplicate maintenance log_id correctly rejected (400 Bad Request)")
+
     # GET maintenance by string log_id
     res = client.get("/api/v1/maintenance/MNT-9999")
     assert res.status_code == 200

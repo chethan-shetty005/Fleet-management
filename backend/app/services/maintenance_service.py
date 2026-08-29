@@ -55,7 +55,14 @@ def create_maintenance_log(db: Session, log_in: MaintenanceCreate) -> Maintenanc
     if "v_id" in log_data:
         del log_data["v_id"]
 
-    if not log_data.get("log_id"):
+    if log_data.get("log_id"):
+        existing = db.scalar(select(MaintenanceLog).where(MaintenanceLog.log_id == log_data["log_id"]))
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Maintenance log with log_id '{log_data['log_id']}' already exists."
+            )
+    else:
         log_data["log_id"] = f"MNT-{uuid.uuid4().hex[:6].upper()}"
 
     db_log = MaintenanceLog(**log_data)
@@ -64,10 +71,17 @@ def create_maintenance_log(db: Session, log_in: MaintenanceCreate) -> Maintenanc
     if db_log.status == "In Progress":
         vehicle.status = "Maintenance"
 
-    db.add(db_log)
-    db.commit()
-    db.refresh(db_log)
-    return db_log
+    try:
+        db.add(db_log)
+        db.commit()
+        db.refresh(db_log)
+        return db_log
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Maintenance log creation failed: {str(e)}"
+        )
 
 def update_maintenance_log(db: Session, log_id: str, log_in: MaintenanceUpdate) -> MaintenanceLog:
     """Update a maintenance log record (accepts string log_id or ID) and adjust vehicle status if completed."""
@@ -80,14 +94,28 @@ def update_maintenance_log(db: Session, log_id: str, log_in: MaintenanceUpdate) 
 
     update_data = log_in.model_dump(exclude_unset=True)
 
+    if "log_id" in update_data and update_data["log_id"] != db_log.log_id:
+        existing = db.scalar(select(MaintenanceLog).where(MaintenanceLog.log_id == update_data["log_id"]))
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Maintenance log with log_id '{update_data['log_id']}' already exists."
+            )
+
     new_v_id = update_data.get("vehicle_id") or update_data.get("v_id")
     if new_v_id:
+        vehicle = db.get(Vehicle, new_v_id)
+        if not vehicle:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Vehicle with ID '{new_v_id}' not found."
+            )
         update_data["vehicle_id"] = new_v_id
         if "v_id" in update_data:
             del update_data["v_id"]
 
     for field, value in update_data.items():
-        if hasattr(db_log, field):
+        if hasattr(db_log, field) and value is not None:
             setattr(db_log, field, value)
 
     # Business logic status coordination
@@ -98,9 +126,16 @@ def update_maintenance_log(db: Session, log_id: str, log_in: MaintenanceUpdate) 
         elif db_log.status == "Completed" and vehicle.status == "Maintenance":
             vehicle.status = "Active"
 
-    db.commit()
-    db.refresh(db_log)
-    return db_log
+    try:
+        db.commit()
+        db.refresh(db_log)
+        return db_log
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Maintenance log update failed: {str(e)}"
+        )
 
 def delete_maintenance_log(db: Session, log_id: str) -> None:
     """Delete a maintenance log by string log_id or ID."""
