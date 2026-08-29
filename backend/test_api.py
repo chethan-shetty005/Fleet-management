@@ -87,11 +87,11 @@ def test_full_flow():
     assert len(created_vin) == 17
     print(f"✅ POST vehicle created with auto-generated random VIN '{created_vin}'")
 
-    # Test VIN immutability: attempting to change vin should fail with 400 Bad Request
-    res = client.put(f"/api/v1/vehicles/{created_v_id}", json={"vin": "MODIFIED_VIN_1234"})
+    # Test VIN immutability via PATCH: attempting to change vin should fail with 400 Bad Request
+    res = client.patch(f"/api/v1/vehicles/{created_v_id}", json={"vin": "MODIFIED_VIN_1234"})
     assert res.status_code == 400
     assert "immutable" in res.json()["detail"].lower()
-    print("✅ PUT vehicle attempt to update VIN correctly rejected (400 Bad Request)")
+    print("✅ PATCH vehicle attempt to update VIN correctly rejected (400 Bad Request)")
 
     # PUT update vehicle status
     res = client.put(f"/api/v1/vehicles/{created_v_id}", json={"status": "Maintenance"})
@@ -137,15 +137,25 @@ def test_full_flow():
     assert res.json()["trip_number"] == "KA-TRIP-9999"
     print(f"✅ GET trip by string ID '{created_t_id}' passed")
 
-    # PUT complete trip (verifies auto-update of vehicle mileage in km)
-    res = client.put(f"/api/v1/trips/KA-TRIP-9999", json={"status": "Completed", "distance_km": 50.0})
+    # PATCH trip partial field update (verifies start_location updated while other fields retain previous data)
+    res = client.patch(f"/api/v1/trips/KA-TRIP-9999", json={"start_location": "Mysuru Logistics Hub", "distance_km": 50.0})
+    assert res.status_code == 200
+    patched_t = res.json()
+    assert patched_t["start_location"] == "Mysuru Logistics Hub"
+    assert patched_t["end_location"] == "Chennai Logistics Yard"
+    assert patched_t["v_id"] == created_v_id
+    print("✅ PATCH trip altered start_location while preserving end_location and v_id intact")
+
+    # PUT complete trip status (verifies status update & auto-update of vehicle mileage)
+    res = client.put(f"/api/v1/trips/KA-TRIP-9999", json={"status": "Completed"})
     assert res.status_code == 200
     assert res.json()["status"] == "Completed"
+    assert res.json()["start_location"] == "Mysuru Logistics Hub"
     
     # Check vehicle mileage updated from 100.0 -> 150.0
     res = client.get(f"/api/v1/vehicles/{created_v_id}")
     assert res.json()["current_mileage"] == 150.0
-    print("✅ PUT trip completed by trip_number & auto-updated vehicle mileage to 150.0")
+    print("✅ PUT trip updated status & auto-updated vehicle mileage to 150.0")
 
     print("\n--- 5. Maintenance API ---")
     new_m = {

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.schemas.vehicle import VehicleCreate, VehicleUpdate, VehicleResponse
+from app.schemas.vehicle import VehicleCreate, VehicleUpdate, VehicleStatusUpdate, VehicleResponse
 from app.services import vehicle_service
 
 router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
@@ -48,8 +48,13 @@ def create_vehicle(vehicle_in: VehicleCreate, db: Session = Depends(get_db)):
     return vehicle_service.create_vehicle(db, vehicle_in)
 
 @router.put("/{v_id}", response_model=VehicleResponse, status_code=status.HTTP_200_OK)
-def update_vehicle(v_id: str, vehicle_in: VehicleUpdate, db: Session = Depends(get_db)):
-    """Update an existing vehicle's information, status, or mileage."""
+def update_vehicle_status(v_id: str, status_in: VehicleStatusUpdate, db: Session = Depends(get_db)):
+    """Update vehicle status ONLY (Active, Maintenance, Out of Service)."""
+    return vehicle_service.update_vehicle(db, v_id, VehicleUpdate(status=status_in.status))
+
+@router.patch("/{v_id}", response_model=VehicleResponse, status_code=status.HTTP_200_OK)
+def patch_vehicle(v_id: str, vehicle_in: VehicleUpdate, db: Session = Depends(get_db)):
+    """Patch/alter any created vehicle fields (retains previous data for unprovided fields)."""
     return vehicle_service.update_vehicle(db, v_id, vehicle_in)
 
 @router.delete("/{v_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.schemas.maintenance import MaintenanceCreate, MaintenanceUpdate, MaintenanceResponse
+from app.schemas.maintenance import MaintenanceCreate, MaintenanceUpdate, MaintenanceStatusUpdate, MaintenanceResponse
 from app.services import maintenance_service
 
 router = APIRouter(prefix="/maintenance", tags=["Maintenance"])
@@ -46,9 +46,13 @@ def create_maintenance_log(log_in: MaintenanceCreate, db: Session = Depends(get_
     return maintenance_service.create_maintenance_log(db, log_in)
 
 @router.put("/{log_id}", response_model=MaintenanceResponse, status_code=status.HTTP_200_OK)
+def update_maintenance_status(log_id: str, status_in: MaintenanceStatusUpdate, db: Session = Depends(get_db)):
+    """Update maintenance log status ONLY (Scheduled, In Progress, Completed)."""
+    return maintenance_service.update_maintenance_log(db, log_id, MaintenanceUpdate(status=status_in.status))
+
 @router.patch("/{log_id}", response_model=MaintenanceResponse, status_code=status.HTTP_200_OK)
-def update_maintenance_log(log_id: str, log_in: MaintenanceUpdate, db: Session = Depends(get_db)):
-    """Update maintenance log details or progress."""
+def patch_maintenance_log(log_id: str, log_in: MaintenanceUpdate, db: Session = Depends(get_db)):
+    """Patch/alter any created maintenance log fields (retains previous data for unprovided fields)."""
     return maintenance_service.update_maintenance_log(db, log_id, log_in)
 
 @router.delete("/{log_id}", status_code=status.HTTP_204_NO_CONTENT)

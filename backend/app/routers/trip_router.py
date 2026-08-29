@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.schemas.trip import TripCreate, TripUpdate, TripResponse
+from app.schemas.trip import TripCreate, TripUpdate, TripStatusUpdate, TripResponse
 from app.services import trip_service
 
 router = APIRouter(prefix="/trips", tags=["Trips"])
@@ -46,9 +46,13 @@ def create_trip(trip_in: TripCreate, db: Session = Depends(get_db)):
     return trip_service.create_trip(db, trip_in)
 
 @router.put("/{trip_id}", response_model=TripResponse, status_code=status.HTTP_200_OK)
+def update_trip_status(trip_id: str, status_in: TripStatusUpdate, db: Session = Depends(get_db)):
+    """Update trip status ONLY (Scheduled, In Progress, Completed, Cancelled)."""
+    return trip_service.update_trip(db, trip_id, TripUpdate(status=status_in.status))
+
 @router.patch("/{trip_id}", response_model=TripResponse, status_code=status.HTTP_200_OK)
-def update_trip(trip_id: str, trip_in: TripUpdate, db: Session = Depends(get_db)):
-    """Update trip status, distance, or details (auto-updates vehicle mileage on completion)."""
+def patch_trip(trip_id: str, trip_in: TripUpdate, db: Session = Depends(get_db)):
+    """Patch/alter any created trip fields (retains previous data for unprovided fields)."""
     return trip_service.update_trip(db, trip_id, trip_in)
 
 @router.delete("/{trip_id}", status_code=status.HTTP_204_NO_CONTENT)

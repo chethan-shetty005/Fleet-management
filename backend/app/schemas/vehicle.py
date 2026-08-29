@@ -27,6 +27,17 @@ class VehicleBase(BaseModel):
 class VehicleCreate(VehicleBase):
     pass
 
+class VehicleStatusUpdate(BaseModel):
+    status: str = Field(..., example="Maintenance", description="Vehicle status (Active, Maintenance, Out of Service)")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "status": "Maintenance"
+            }
+        }
+    )
+
 class VehicleUpdate(BaseModel):
     license_plate: Optional[str] = Field(None, min_length=2, max_length=20, example="KA01AB1234")
     vin: Optional[str] = Field(None, description="VIN is immutable and cannot be updated or modified once created")

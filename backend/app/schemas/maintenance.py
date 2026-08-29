@@ -23,6 +23,17 @@ class MaintenanceBase(BaseModel):
 class MaintenanceCreate(MaintenanceBase):
     pass
 
+class MaintenanceStatusUpdate(BaseModel):
+    status: str = Field(..., example="Completed", description="Maintenance status (Scheduled, In Progress, Completed)")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "status": "Completed"
+            }
+        }
+    )
+
 class MaintenanceUpdate(BaseModel):
     log_id: Optional[str] = Field(None, description="Optional log_id update")
     v_id: Optional[str] = Field(None, description="Optional v_id update")
@@ -44,7 +55,13 @@ class MaintenanceUpdate(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "status": "Completed"
+                "log_id": "MNT-1001",
+                "v_id": "VH001",
+                "service_type": "Engine Repair",
+                "description": "Routine synthetic oil change and injector check",
+                "cost": 350.0,
+                "status": "Completed",
+                "performed_by": "Fleet Care Services"
             }
         }
     )
