@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, ConfigDict, model_validator, field_serial
 
 class MaintenanceBase(BaseModel):
     log_id: Optional[str] = Field(None, example="MNT-1001", description="String maintenance log identifier")
-    vehicle_id: str = Field(..., description="Vehicle string ID (v_id) undergoing maintenance", example="VH001")
+    v_id: str = Field(..., description="Vehicle string ID (v_id) undergoing maintenance", example="VH001")
     service_type: str = Field(..., min_length=2, max_length=50, example="Oil Change")
     description: Optional[str] = Field(None, example="Routine synthetic oil change and filter replacement")
     cost: float = Field(0.0, ge=0.0, example=150.0)
@@ -16,41 +16,35 @@ class MaintenanceBase(BaseModel):
     @classmethod
     def populate_vehicle_alias(cls, data):
         if isinstance(data, dict):
-            if not data.get("vehicle_id") and data.get("v_id"):
-                data["vehicle_id"] = data.get("v_id")
+            if "v_id" not in data and "vehicle_id" in data:
+                data["v_id"] = data.pop("vehicle_id")
         return data
 
 class MaintenanceCreate(MaintenanceBase):
     pass
 
 class MaintenanceUpdate(BaseModel):
-    log_id: Optional[str] = Field(None, example="MNT-1001")
-    vehicle_id: Optional[str] = Field(None, example="VH001")
-    service_type: Optional[str] = Field(None, min_length=2, max_length=50, example="Oil Change")
-    description: Optional[str] = Field(None, example="Routine maintenance")
-    cost: Optional[float] = Field(None, ge=0.0, example=150.0)
-    service_date: Optional[date] = Field(None)
-    status: Optional[str] = Field(None, example="Completed")
-    performed_by: Optional[str] = Field(None, example="Quick Lube")
+    log_id: Optional[str] = Field(None, description="Optional log_id update")
+    v_id: Optional[str] = Field(None, description="Optional v_id update")
+    service_type: Optional[str] = Field(None, min_length=2, max_length=50, description="Optional service_type update")
+    description: Optional[str] = Field(None, description="Optional description update")
+    cost: Optional[float] = Field(None, ge=0.0, description="Optional cost update")
+    service_date: Optional[date] = Field(None, description="Optional service_date update")
+    status: Optional[str] = Field(None, description="Optional status update")
+    performed_by: Optional[str] = Field(None, description="Optional performed_by update")
 
     @model_validator(mode='before')
     @classmethod
     def populate_vehicle_alias(cls, data):
         if isinstance(data, dict):
-            if not data.get("vehicle_id") and data.get("v_id"):
-                data["vehicle_id"] = data.get("v_id")
+            if "v_id" not in data and "vehicle_id" in data:
+                data["v_id"] = data.pop("vehicle_id")
         return data
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "log_id": "MNT-1001",
-                "vehicle_id": "VH001",
-                "service_type": "Engine Repair",
-                "description": "Routine synthetic oil change and injector check",
-                "cost": 350.0,
-                "status": "Completed",
-                "performed_by": "Fleet Care Services"
+                "status": "Completed"
             }
         }
     )
@@ -77,6 +71,8 @@ class MaintenanceResponse(MaintenanceBase):
             
             if isinstance(data, dict):
                 data["log_id"] = final_log_id
+                if "v_id" not in data and "vehicle_id" in data:
+                    data["v_id"] = data.get("vehicle_id")
             else:
                 if not getattr(data, "log_id", None):
                     setattr(data, "log_id", final_log_id)

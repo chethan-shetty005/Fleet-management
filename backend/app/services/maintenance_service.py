@@ -42,7 +42,7 @@ def get_maintenance_log_by_id(db: Session, log_id: str) -> Optional[MaintenanceL
 
 def create_maintenance_log(db: Session, log_in: MaintenanceCreate) -> MaintenanceLog:
     """Create a new maintenance log record for a vehicle."""
-    v_id = log_in.vehicle_id or getattr(log_in, "v_id", None)
+    v_id = getattr(log_in, "v_id", None) or getattr(log_in, "vehicle_id", None)
     vehicle = db.get(Vehicle, v_id)
     if not vehicle:
         raise HTTPException(

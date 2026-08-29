@@ -105,7 +105,7 @@ def test_full_flow():
     # POST create trip with Indian vehicle structure and string trip_number
     new_t = {
         "trip_number": "KA-TRIP-9999",
-        "vehicle_id": created_v_id,
+        "v_id": created_v_id,
         "start_location": "Bengaluru Freight Hub",
         "end_location": "Chennai Logistics Yard",
         "status": "In Progress",
@@ -121,7 +121,6 @@ def test_full_flow():
     assert isinstance(created_t["trip_id"], str)
     assert created_t["trip_number"] == "KA-TRIP-9999"
     assert created_t["v_id"] == created_v_id
-    assert created_t["vehicle_id"] == created_v_id
     assert created_t["distance_km"] == 50.0
     assert created_t["fuel_consumed_liters"] == 10.0
     print(f"✅ POST trip created with trip_number='KA-TRIP-9999' and string id='{created_t_id}'")
@@ -151,7 +150,7 @@ def test_full_flow():
     print("\n--- 5. Maintenance API ---")
     new_m = {
         "log_id": "MNT-9999",
-        "vehicle_id": created_v_id,
+        "v_id": created_v_id,
         "service_type": "Battery Check",
         "description": "Routine health check for EV battery",
         "cost": 200.0,
@@ -165,7 +164,7 @@ def test_full_flow():
     created_log_id = created_m["log_id"]
     assert isinstance(created_m_id, str)
     assert created_log_id == "MNT-9999"
-    assert created_m["vehicle_id"] == created_v_id
+    assert created_m["v_id"] == created_v_id
     print(f"✅ POST maintenance created with log_id='MNT-9999' and string id='{created_m_id}'")
 
     # Test duplicate log_id handling (should return 400 Bad Request instead of 500)

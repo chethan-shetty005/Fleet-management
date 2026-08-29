@@ -41,7 +41,7 @@ def get_trip_by_id(db: Session, trip_id: str) -> Optional[Trip]:
 
 def create_trip(db: Session, trip_in: TripCreate) -> Trip:
     """Dispatch/create a new trip after verifying assigned vehicle existence."""
-    v_id = trip_in.vehicle_id or trip_in.v_id
+    v_id = getattr(trip_in, "v_id", None) or getattr(trip_in, "vehicle_id", None)
     # Verify vehicle exists
     vehicle = db.get(Vehicle, v_id)
     if not vehicle:
