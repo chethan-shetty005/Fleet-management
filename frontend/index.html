@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WASTRAQ | Fleet & Fuel Management Dashboard</title>
+  <meta name="description" content="Comprehensive Fleet & Fuel Operations Management Platform for Municipalities & Enterprise Operations.">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-badge">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="3" width="15" height="13"></rect>
+            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+            <circle cx="5.5" cy="18.5" r="2.5"></circle>
+            <circle cx="18.5" cy="18.5" r="2.5"></circle>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="logo-title">WASTRAQ</span>
+          <span class="logo-subtitle">Fleet & Fuel</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-tab="dashboard" id="nav-dashboard">
+          <div class="nav-left">
+            <span class="nav-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+              </svg>
+            </span>
+            <span>Dashboard</span>
+          </div>
+        </a>
+
+        <a href="#" class="nav-item" data-tab="vehicles" id="nav-vehicles">
+          <div class="nav-left">
+            <span class="nav-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path>
+                <circle cx="7" cy="17" r="2"></circle>
+                <circle cx="17" cy="17" r="2"></circle>
+              </svg>
+            </span>
+            <span>Vehicles</span>
+          </div>
+        </a>
+
+        <a href="#" class="nav-item" data-tab="fuel" id="nav-fuel">
+          <div class="nav-left">
+            <span class="nav-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"></path>
+                <path d="M13 11l4-4 2 2v9a2 2 0 0 1-2 2h-4"></path>
+                <rect x="6" y="6" width="4" height="4"></rect>
+              </svg>
+            </span>
+            <span>Fuel Records</span>
+          </div>
+        </a>
+
+        <a href="#" class="nav-item" data-tab="issues" id="nav-issues">
+          <div class="nav-left">
+            <span class="nav-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </span>
+            <span>Vehicle Issues</span>
+          </div>
+        </a>
+
+        <a href="#" class="nav-item" data-tab="analysis" id="nav-analysis">
+          <div class="nav-left">
+            <span class="nav-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+            </span>
+            <span>Analysis</span>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </a>
+
+        <a href="#" class="nav-item" data-tab="audits" id="nav-audits">
+          <div class="nav-left">
+            <span class="nav-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            </span>
+            <span>Audit Records</span>
+          </div>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Admin Avatar" class="avatar">
+          <div class="user-info">
+            <span class="user-name">Admin User</span>
+            <span class="user-role">Municipality Admin</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <div class="main-wrapper">
+      <div class="content-body">
+
+        <!-- Top Header Bar -->
+        <header class="top-header">
+          <div class="header-title-block">
+            <h1 id="page-title">Fleet & Fuel Management Dashboard</h1>
+            <p id="page-subtitle">Overview of your fleet and fuel operations</p>
+          </div>
+
+          <div class="header-actions">
+            <button class="btn btn-primary" id="openAddVehicleBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>+ Add Vehicle</span>
+            </button>
+
+            <button class="btn btn-secondary" id="openAddFuelBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>+ Add Fuel Record</span>
+            </button>
+
+            <button class="btn btn-outline" id="exportBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              <span>Export</span>
+            </button>
+
+            <button class="date-picker-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <span>01 Aug 2025 - 27 Aug 2025</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Global Filters Bar -->
+        <section class="filter-bar">
+          <div class="filter-group">
+            <span class="filter-label">Ward</span>
+            <select class="filter-select" id="filterWard">
+              <option value="All">All Wards</option>
+              <option value="Ward 1">Ward 1</option>
+              <option value="Ward 2">Ward 2</option>
+              <option value="Ward 3">Ward 3</option>
+              <option value="Ward 4">Ward 4</option>
+              <option value="Ward 5">Ward 5</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label">Vehicle Type</span>
+            <select class="filter-select" id="filterType">
+              <option value="All">All Types</option>
+              <option value="Compactor">Compactor</option>
+              <option value="Tipper">Tipper</option>
+              <option value="Tractor">Tractor</option>
+              <option value="Loader">Loader</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label">Vehicle Status</span>
+            <select class="filter-select" id="filterStatus">
+              <option value="All">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Maintenance">Maintenance</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label">Fuel Type</span>
+            <select class="filter-select" id="filterFuelType">
+              <option value="All">All Fuel Types</option>
+              <option value="Diesel">Diesel</option>
+              <option value="CNG">CNG</option>
+              <option value="Electric">Electric</option>
+            </select>
+          </div>
+
+          <div class="search-group">
+            <span class="search-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </span>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search by Vehicle No. / Driver / Chassis">
+          </div>
+
+          <button class="btn btn-outline" style="padding: 9px 14px;" id="resetFiltersBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            <span>Filters</span>
+          </button>
+        </section>
+
+        <!-- KPI Summary Cards (6 Cards) -->
+        <section class="kpi-grid" id="kpiContainer">
+          <!-- Rendered dynamically -->
+        </section>
+
+        <!-- Dynamic Grid Content (Tables & Charts) -->
+        <div class="dashboard-grid" id="dashboardContentGrid">
+          
+          <!-- Row 1: Vehicles & Fuel Records -->
+          <div class="card" id="cardVehicles">
+            <div class="card-header">
+              <h2 class="card-title">Vehicles</h2>
+              <a href="#" class="view-all-link" data-tab="vehicles">View all</a>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Vehicle No.</th>
+                    <th>Type</th>
+                    <th>Ward</th>
+                    <th>Status</th>
+                    <th>Last Service</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyVehicles"></tbody>
+              </table>
+            </div>
+            <div class="card-footer">
+              <span id="footerVehiclesCount">Showing 1 to 5 of 126 vehicles</span>
+            </div>
+          </div>
+
+          <div class="card" id="cardFuelRecords">
+            <div class="card-header">
+              <h2 class="card-title">Fuel Records</h2>
+              <a href="#" class="view-all-link" data-tab="fuel">View all</a>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Vehicle No.</th>
+                    <th>Fuel Type</th>
+                    <th>Liters (L)</th>
+                    <th>Amount (₹)</th>
+                    <th>Ward</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyFuelRecords"></tbody>
+              </table>
+            </div>
+            <div class="card-footer">
+              <span id="footerFuelCount">Showing 1 to 5 of 842 fuel records</span>
+            </div>
+          </div>
+
+          <!-- Row 2: Vehicle Issues & Analysis Overview -->
+          <div class="card" id="cardVehicleIssues">
+            <div class="card-header">
+              <h2 class="card-title">Vehicle Issues</h2>
+              <a href="#" class="view-all-link" data-tab="issues">View all</a>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Issue ID</th>
+                    <th>Vehicle No.</th>
+                    <th>Issue</th>
+                    <th>Severity</th>
+                    <th>Status</th>
+                    <th>Reported On</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyIssues"></tbody>
+              </table>
+            </div>
+            <div class="card-footer">
+              <span id="footerIssuesCount">Showing 1 to 5 of 10 issues</span>
+            </div>
+          </div>
+
+          <div class="card" id="cardAnalysisOverview">
+            <div class="card-header">
+              <h2 class="card-title">Analysis Overview</h2>
+              <a href="#" class="view-all-link" data-tab="analysis">View all</a>
+            </div>
+            <div class="chart-split-container">
+              <div class="chart-block">
+                <span class="chart-subtitle">Fuel Consumption Trend (L)</span>
+                <div class="canvas-wrapper">
+                  <canvas id="trendChartCanvas"></canvas>
+                </div>
+              </div>
+              <div class="chart-block">
+                <span class="chart-subtitle">Fuel by Vehicle Type (L)</span>
+                <div class="donut-legend-wrapper">
+                  <div class="canvas-wrapper" style="width: 140px; height: 140px;">
+                    <canvas id="donutVehicleTypeCanvas"></canvas>
+                  </div>
+                  <div class="legend-list">
+                    <div class="legend-item"><span class="legend-color-dot" style="background:#3B82F6;"></span>Compactor 5,650 L (45.4%)</div>
+                    <div class="legend-item"><span class="legend-color-dot" style="background:#A855F7;"></span>Tipper 3,250 L (26.1%)</div>
+                    <div class="legend-item"><span class="legend-color-dot" style="background:#EAB308;"></span>Tractor 1,950 L (15.7%)</div>
+                    <div class="legend-item"><span class="legend-color-dot" style="background:#22C55E;"></span>Loader 1,600 L (12.8%)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 3: Audit Records & Ward/Fuel Distribution Charts -->
+          <div class="card" id="cardAuditRecords">
+            <div class="card-header">
+              <h2 class="card-title">Audit Records</h2>
+              <a href="#" class="view-all-link" data-tab="audits">View all</a>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date & Time</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Entity</th>
+                    <th>Entity ID</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyAuditRecords"></tbody>
+              </table>
+            </div>
+            <div class="card-footer">
+              <span id="footerAuditCount">Showing 1 to 5 of 250 records</span>
+            </div>
+          </div>
+
+          <div class="card" id="cardEfficiencyCharts">
+            <div class="card-header">
+              <h2 class="card-title">Ward Efficiency & Distribution</h2>
+              <a href="#" class="view-all-link" data-tab="analysis">View all</a>
+            </div>
+            <div class="chart-split-container">
+              <div class="chart-block">
+                <span class="chart-subtitle">Ward-wise Fuel Efficiency (km/L)</span>
+                <div class="canvas-wrapper">
+                  <canvas id="barWardCanvas"></canvas>
+                </div>
+              </div>
+              <div class="chart-block">
+                <span class="chart-subtitle">Fuel Type Distribution (L)</span>
+                <div class="donut-legend-wrapper">
+                  <div class="canvas-wrapper" style="width: 140px; height: 140px;">
+                    <canvas id="donutFuelTypeCanvas"></canvas>
+                  </div>
+                  <div class="legend-list">
+                    <div class="legend-item"><span class="legend-color-dot" style="background:#2563EB;"></span>Diesel 9,850 L (79.1%)</div>
+                    <div class="legend-item"><span class="legend-color-dot" style="background:#10B981;"></span>CNG 2,600 L (20.9%)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div> <!-- /dashboard-grid -->
+
+      </div> <!-- /content-body -->
+
+      <!-- Footer Bar -->
+      <footer class="app-footer">
+        <span>Last updated: <strong id="lastUpdatedTime">27 Aug 2025 11:30 AM</strong></span>
+        <svg class="refresh-icon" id="refreshBtn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M2.5 22v-6h6"></path><path d="M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.2L2.5 16"></path></svg>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Modals -->
+
+  <!-- Add Vehicle Modal -->
+  <div class="modal-overlay" id="addVehicleModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">+ Add New Vehicle</h3>
+        <button class="close-modal-btn">&times;</button>
+      </div>
+      <form id="addVehicleForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Vehicle Registration No.</label>
+            <input type="text" name="vehicleNo" class="form-input" placeholder="e.g. KA01AB9999" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vehicle Type</label>
+            <select name="type" class="form-select" required>
+              <option value="Compactor">Compactor</option>
+              <option value="Tipper">Tipper</option>
+              <option value="Tractor">Tractor</option>
+              <option value="Loader">Loader</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ward Assignment</label>
+            <select name="ward" class="form-select" required>
+              <option value="Ward 1">Ward 1</option>
+              <option value="Ward 2">Ward 2</option>
+              <option value="Ward 3">Ward 3</option>
+              <option value="Ward 4">Ward 4</option>
+              <option value="Ward 5">Ward 5</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fuel Type</label>
+            <select name="fuelType" class="form-select" required>
+              <option value="Diesel">Diesel</option>
+              <option value="CNG">CNG</option>
+              <option value="Electric">Electric</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Maintenance">Maintenance</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Assigned Driver</label>
+            <input type="text" name="driver" class="form-input" placeholder="e.g. Rajesh Sharma">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Current Odometer (km)</label>
+            <input type="number" name="mileage" class="form-input" placeholder="e.g. 15000">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline cancel-modal-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Vehicle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Fuel Record Modal -->
+  <div class="modal-overlay" id="addFuelModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">+ Log Fuel Record</h3>
+        <button class="close-modal-btn">&times;</button>
+      </div>
+      <form id="addFuelForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Vehicle Registration No.</label>
+            <select name="vehicleNo" class="form-select" required id="fuelModalVehicleSelect">
+              <option value="KA01AB1234">KA01AB1234 (Compactor)</option>
+              <option value="KA01CD5678">KA01CD5678 (Tipper)</option>
+              <option value="KA01EF9012">KA01EF9012 (Tractor)</option>
+              <option value="KA01GH3456">KA01GH3456 (Compactor)</option>
+              <option value="KA01IJ7890">KA01IJ7890 (Loader)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fuel Type</label>
+            <select name="fuelType" class="form-select" required>
+              <option value="Diesel">Diesel</option>
+              <option value="CNG">CNG</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fuel Quantity (Liters)</label>
+            <input type="number" step="0.01" name="liters" class="form-input" placeholder="e.g. 120.00" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Total Amount (₹)</label>
+            <input type="number" step="0.01" name="amount" class="form-input" placeholder="e.g. 7200.00" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ward</label>
+            <select name="ward" class="form-select" required>
+              <option value="Ward 1">Ward 1</option>
+              <option value="Ward 2">Ward 2</option>
+              <option value="Ward 3">Ward 3</option>
+              <option value="Ward 4">Ward 4</option>
+              <option value="Ward 5">Ward 5</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline cancel-modal-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Fuel Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Detail View Modal -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="detailTitle">Details</h3>
+        <button class="close-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body" id="detailContent">
+        <!-- Rendered dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary cancel-modal-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
