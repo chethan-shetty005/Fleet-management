@@ -17,6 +17,10 @@ let state = {
     type: 'All',
     status: 'All',
     fuelType: 'All',
+    severity: 'All',
+    issueStatus: 'All',
+    zone: 'All',
+    mileage: 'All',
     search: '',
     startDate: null,
     endDate: null
@@ -95,15 +99,25 @@ function parseDate(dateStr) {
 
 /* Filter Helper */
 function filterList(list, fields = [], dateField = null) {
-  const { type, status, fuelType, search, startDate, endDate } = state.filters;
+  const { type, status, fuelType, severity, issueStatus, zone, mileage, search, startDate, endDate } = state.filters;
 
   const start = startDate ? new Date(`${startDate}T00:00:00`) : null;
   const end = endDate ? new Date(`${endDate}T23:59:59.999`) : null;
 
   return list.filter(item => {
     if (type !== 'All' && item.type && item.type !== type) return false;
-    if (status !== 'All' && item.status && item.status !== status) return false;
+    if (status !== 'All' && item.status && item.status !== status && !item.issueId) return false;
     if (fuelType !== 'All' && item.fuelType && item.fuelType !== fuelType) return false;
+
+    if (severity && severity !== 'All' && item.severity && item.severity !== severity) return false;
+    if (issueStatus && issueStatus !== 'All' && item.issueId && item.status !== issueStatus) return false;
+    if (zone && zone !== 'All' && item.zone && item.zone !== zone) return false;
+
+    if (mileage && mileage !== 'All' && typeof item.mileage === 'number') {
+      if (mileage === 'low' && item.mileage >= 10000) return false;
+      if (mileage === 'mid' && (item.mileage < 10000 || item.mileage > 50000)) return false;
+      if (mileage === 'high' && item.mileage <= 50000) return false;
+    }
 
     if (dateField && (start || end)) {
       const itemDateStr = item[dateField];
@@ -605,22 +619,86 @@ function setupEventListeners() {
     renderAll();
   });
 
+  document.getElementById('filterSeverity')?.addEventListener('change', (e) => {
+    state.filters.severity = e.target.value;
+    renderAll();
+  });
+
+  document.getElementById('filterIssueStatus')?.addEventListener('change', (e) => {
+    state.filters.issueStatus = e.target.value;
+    renderAll();
+  });
+
+  document.getElementById('filterZone')?.addEventListener('change', (e) => {
+    state.filters.zone = e.target.value;
+    renderAll();
+  });
+
+  document.getElementById('filterMileage')?.addEventListener('change', (e) => {
+    state.filters.mileage = e.target.value;
+    renderAll();
+  });
+
   document.getElementById('searchInput')?.addEventListener('input', (e) => {
     state.filters.search = e.target.value;
     renderAll();
   });
 
   document.getElementById('resetFiltersBtn')?.addEventListener('click', () => {
-    state.filters = { type: 'All', status: 'All', fuelType: 'All', search: '', startDate: null, endDate: null };
-    document.getElementById('filterType').value = 'All';
-    document.getElementById('filterStatus').value = 'All';
-    document.getElementById('filterFuelType').value = 'All';
-    document.getElementById('searchInput').value = '';
-    document.getElementById('startDateInput').value = '2025-08-01';
-    document.getElementById('endDateInput').value = '2025-08-27';
+    state.filters = {
+      type: 'All',
+      status: 'All',
+      fuelType: 'All',
+      severity: 'All',
+      issueStatus: 'All',
+      zone: 'All',
+      mileage: 'All',
+      search: '',
+      startDate: null,
+      endDate: null
+    };
+
+    if (document.getElementById('filterType')) document.getElementById('filterType').value = 'All';
+    if (document.getElementById('filterStatus')) document.getElementById('filterStatus').value = 'All';
+    if (document.getElementById('filterFuelType')) document.getElementById('filterFuelType').value = 'All';
+    if (document.getElementById('filterSeverity')) document.getElementById('filterSeverity').value = 'All';
+    if (document.getElementById('filterIssueStatus')) document.getElementById('filterIssueStatus').value = 'All';
+    if (document.getElementById('filterZone')) document.getElementById('filterZone').value = 'All';
+    if (document.getElementById('filterMileage')) document.getElementById('filterMileage').value = 'All';
+    if (document.getElementById('searchInput')) document.getElementById('searchInput').value = '';
+    if (document.getElementById('startDateInput')) document.getElementById('startDateInput').value = '2025-08-01';
+    if (document.getElementById('endDateInput')) document.getElementById('endDateInput').value = '2025-08-27';
+
     const labelEl = document.getElementById('dateRangeLabel');
-    if (labelEl) labelEl.textContent = '01 Aug 2025 - 27 Aug 2025';
+    if (labelEl) labelEl.textContent = 'All Dates';
+
     renderAll();
+  });
+
+  // Preset Date Buttons
+  document.querySelectorAll('.preset-date-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const range = e.currentTarget.dataset.range;
+      let startStr = '2025-08-01';
+      let endStr = '2025-08-27';
+
+      if (range === 'today') {
+        startStr = '2025-08-27';
+        endStr = '2025-08-27';
+      } else if (range === '7days') {
+        startStr = '2025-08-20';
+        endStr = '2025-08-27';
+      } else if (range === 'month') {
+        startStr = '2025-08-01';
+        endStr = '2025-08-31';
+      } else if (range === 'ytd') {
+        startStr = '2025-01-01';
+        endStr = '2025-08-27';
+      }
+
+      if (document.getElementById('startDateInput')) document.getElementById('startDateInput').value = startStr;
+      if (document.getElementById('endDateInput')) document.getElementById('endDateInput').value = endStr;
+    });
   });
 
   // Export Fleet Data CSV

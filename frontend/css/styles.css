@@ -406,10 +406,10 @@ a {
   pointer-events: none;
 }
 
-/* KPI Summary Cards Grid */
+/* KPI Summary Cards Grid (3x2 format) */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
