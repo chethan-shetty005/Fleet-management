@@ -6,6 +6,7 @@ export function initModals({ onAddVehicle, onAddFuelRecord }) {
   const addVehicleModal = document.getElementById('addVehicleModal');
   const addFuelModal = document.getElementById('addFuelModal');
   const detailModal = document.getElementById('detailModal');
+  const datePickerModal = document.getElementById('datePickerModal');
 
   // Trigger buttons
   document.getElementById('openAddVehicleBtn')?.addEventListener('click', () => {
@@ -16,12 +17,17 @@ export function initModals({ onAddVehicle, onAddFuelRecord }) {
     addFuelModal?.classList.add('active');
   });
 
+  document.getElementById('datePickerBtn')?.addEventListener('click', () => {
+    datePickerModal?.classList.add('active');
+  });
+
   // Close triggers
   document.querySelectorAll('.close-modal-btn, .cancel-modal-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       addVehicleModal?.classList.remove('active');
       addFuelModal?.classList.remove('active');
       detailModal?.classList.remove('active');
+      datePickerModal?.classList.remove('active');
     });
   });
 

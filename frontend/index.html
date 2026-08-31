@@ -41,73 +41,6 @@
             <span>Dashboard</span>
           </div>
         </a>
-
-        <a href="#" class="nav-item" data-tab="vehicles" id="nav-vehicles">
-          <div class="nav-left">
-            <span class="nav-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path>
-                <circle cx="7" cy="17" r="2"></circle>
-                <circle cx="17" cy="17" r="2"></circle>
-              </svg>
-            </span>
-            <span>Vehicles</span>
-          </div>
-        </a>
-
-        <a href="#" class="nav-item" data-tab="fuel" id="nav-fuel">
-          <div class="nav-left">
-            <span class="nav-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"></path>
-                <path d="M13 11l4-4 2 2v9a2 2 0 0 1-2 2h-4"></path>
-                <rect x="6" y="6" width="4" height="4"></rect>
-              </svg>
-            </span>
-            <span>Fuel Records</span>
-          </div>
-        </a>
-
-        <a href="#" class="nav-item" data-tab="issues" id="nav-issues">
-          <div class="nav-left">
-            <span class="nav-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
-            </span>
-            <span>Vehicle Issues</span>
-          </div>
-        </a>
-
-        <a href="#" class="nav-item" data-tab="analysis" id="nav-analysis">
-          <div class="nav-left">
-            <span class="nav-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="20" x2="18" y2="10"></line>
-                <line x1="12" y1="20" x2="12" y2="4"></line>
-                <line x1="6" y1="20" x2="6" y2="14"></line>
-              </svg>
-            </span>
-            <span>Analysis</span>
-          </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-        </a>
-
-        <a href="#" class="nav-item" data-tab="audits" id="nav-audits">
-          <div class="nav-left">
-            <span class="nav-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-              </svg>
-            </span>
-            <span>Audit Records</span>
-          </div>
-        </a>
       </nav>
 
       <div class="sidebar-footer">
@@ -133,24 +66,24 @@
           </div>
 
           <div class="header-actions">
-            <button class="btn btn-primary" id="openAddVehicleBtn">
+            <button type="button" class="btn btn-primary" id="openAddVehicleBtn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              <span>+ Add Vehicle</span>
+              <span>Add Vehicle</span>
             </button>
 
-            <button class="btn btn-secondary" id="openAddFuelBtn">
+            <button type="button" class="btn btn-secondary" id="openAddFuelBtn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              <span>+ Add Fuel Record</span>
+              <span>Add Fuel Record</span>
             </button>
 
-            <button class="btn btn-outline" id="exportBtn">
+            <button type="button" class="btn btn-outline" id="exportBtn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
               <span>Export</span>
             </button>
 
-            <button class="date-picker-btn">
+            <button type="button" class="date-picker-btn" id="datePickerBtn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              <span>01 Aug 2025 - 27 Aug 2025</span>
+              <span id="dateRangeLabel">01 Aug 2025 - 27 Aug 2025</span>
             </button>
           </div>
         </header>
@@ -493,6 +426,33 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-primary cancel-modal-btn">Close</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Date Range Filter Modal -->
+  <div class="modal-overlay" id="datePickerModal">
+    <div class="modal-card" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Select Date Range</h3>
+        <button class="close-modal-btn">&times;</button>
+      </div>
+      <form id="datePickerForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Start Date</label>
+            <input type="date" id="startDateInput" class="form-input" value="2025-08-01" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">End Date</label>
+            <input type="date" id="endDateInput" class="form-input" value="2025-08-27" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="clearDateBtn">Clear Filter</button>
+          <button type="button" class="btn btn-outline cancel-modal-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Apply Filter</button>
+        </div>
+      </form>
     </div>
   </div>
 
