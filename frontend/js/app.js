@@ -3,7 +3,7 @@
  * Integrates API Service, Custom Chart Canvas Renderer, and Interactive Modals.
  */
 
-import { fetchKPIs, fetchVehicles, addVehicle, addFuelRecord, deleteVehicle, deleteFuelRecord, resolveIssue, getLocalState } from './api.js';
+import { fetchKPIs, fetchVehicles, addVehicle, addFuelRecord, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js';
 import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js';
 import { initModals, openDetailModal } from './modals.js';
 
@@ -246,7 +246,22 @@ function renderVehiclesTable() {
   }
 
   tbody.innerHTML = filtered.slice(0, 5).map(v => {
-    const badgeClass = v.status === 'Active' ? 'badge-active' : v.status === 'Inactive' ? 'badge-inactive' : 'badge-maintenance';
+    const badgeClass = v.status === 'Active' ? 'badge-active' : v.status === 'Inactive' ? 'badge-inactive' : v.status === 'Maintenance' ? 'badge-maintenance' : 'badge-out-of-service';
+    const statuses = [
+      { key: 'Active', dotClass: 'dot-active' },
+      { key: 'Inactive', dotClass: 'dot-inactive' },
+      { key: 'Maintenance', dotClass: 'dot-maintenance' },
+      { key: 'Out of Service', dotClass: 'dot-out-of-service' }
+    ];
+
+    const menuItemsHtml = statuses.map(s => `
+      <div class="status-menu-item ${v.status === s.key ? 'active' : ''}" data-value="${s.key}">
+        <span class="dot ${s.dotClass}"></span>
+        <span>${s.key}</span>
+        ${v.status === s.key ? '<svg class="check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
+      </div>
+    `).join('');
+
     return `
       <tr>
         <td>
@@ -256,7 +271,18 @@ function renderVehiclesTable() {
           </div>
         </td>
         <td>${v.type}</td>
-        <td><span class="badge ${badgeClass}">${v.status}</span></td>
+        <td>
+          <div class="custom-status-dropdown" data-id="${v.id || v.vehicleNo}">
+            <button type="button" class="status-badge-trigger badge ${badgeClass}" aria-label="Select status for ${v.vehicleNo}">
+              <span class="status-dot"></span>
+              <span class="status-text">${v.status}</span>
+              <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="status-menu">
+              ${menuItemsHtml}
+            </div>
+          </div>
+        </td>
         <td>${v.lastService}</td>
         <td style="text-align: right;">
           <div class="action-btns" style="justify-content: flex-end;">
@@ -350,20 +376,69 @@ function renderIssuesTable() {
     return;
   }
 
-  tbody.innerHTML = filtered.slice(0, 5).map(i => {
+  const statusPriority = {
+    'Open': 1,
+    'In Progress': 2,
+    'Closed': 3,
+    'Resolved': 4
+  };
+
+  const severityPriority = {
+    'High': 1,
+    'Medium': 2,
+    'Low': 3
+  };
+
+  const sorted = [...filtered].sort((a, b) => {
+    const sA = statusPriority[a.status] || 99;
+    const sB = statusPriority[b.status] || 99;
+    if (sA !== sB) return sA - sB;
+
+    const vA = severityPriority[a.severity] || 99;
+    const vB = severityPriority[b.severity] || 99;
+    return vA - vB;
+  });
+
+  tbody.innerHTML = sorted.slice(0, 5).map(i => {
     const sevClass = i.severity === 'High' ? 'badge-high' : i.severity === 'Medium' ? 'badge-medium' : 'badge-low';
     const statusClass = i.status === 'Open' ? 'badge-open' : i.status === 'In Progress' ? 'badge-in-progress' : i.status === 'Resolved' ? 'badge-resolved' : 'badge-closed';
+    const statuses = [
+      { key: 'Open', dotClass: 'dot-open' },
+      { key: 'In Progress', dotClass: 'dot-in-progress' },
+      { key: 'Resolved', dotClass: 'dot-resolved' },
+      { key: 'Closed', dotClass: 'dot-closed' }
+    ];
+
+    const menuItemsHtml = statuses.map(s => `
+      <div class="status-menu-item issue-status-menu-item ${i.status === s.key ? 'active' : ''}" data-value="${s.key}">
+        <span class="dot ${s.dotClass}"></span>
+        <span>${s.key}</span>
+        ${i.status === s.key ? '<svg class="check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
+      </div>
+    `).join('');
+
     return `
       <tr>
         <td><strong>${i.issueId}</strong></td>
         <td>${i.vehicleNo}</td>
         <td>${i.issue}</td>
         <td><span class="badge ${sevClass}">${i.severity}</span></td>
-        <td><span class="badge ${statusClass}">${i.status}</span></td>
+        <td>
+          <div class="custom-status-dropdown" data-id="${i.issueId || i.id}">
+            <button type="button" class="status-badge-trigger badge ${statusClass}" aria-label="Select status for issue ${i.issueId}">
+              <span class="status-dot"></span>
+              <span class="status-text">${i.status}</span>
+              <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="status-menu">
+              ${menuItemsHtml}
+            </div>
+          </div>
+        </td>
         <td>${i.reportedOn}</td>
         <td style="text-align: right;">
           <div class="action-btns" style="justify-content: flex-end;">
-            <button class="action-icon-btn resolve-issue" data-id="${i.id}" title="Resolve Issue">
+            <button class="action-icon-btn resolve-issue" data-id="${i.id}" title="Quick Resolve Issue">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
             </button>
           </div>
@@ -606,6 +681,44 @@ function setupEventListeners() {
 
   // Table actions delegation
   document.addEventListener('click', async (e) => {
+    // 1. Status Dropdown Trigger Toggle
+    const trigger = e.target.closest('.status-badge-trigger');
+    if (trigger) {
+      e.stopPropagation();
+      const dropdown = trigger.closest('.custom-status-dropdown');
+      const isOpen = dropdown.classList.contains('open');
+
+      document.querySelectorAll('.custom-status-dropdown.open').forEach(d => d.classList.remove('open'));
+      if (!isOpen) {
+        dropdown.classList.add('open');
+      }
+      return;
+    }
+
+    // 2. Select Option in Status Menu (Vehicle or Issue)
+    const menuItem = e.target.closest('.status-menu-item');
+    if (menuItem) {
+      e.stopPropagation();
+      const dropdown = menuItem.closest('.custom-status-dropdown');
+      const id = dropdown.dataset.id;
+      const newStatus = menuItem.dataset.value;
+
+      dropdown.classList.remove('open');
+      if (menuItem.classList.contains('issue-status-menu-item')) {
+        await updateIssueStatus(id, newStatus);
+      } else {
+        await updateVehicleStatus(id, newStatus);
+      }
+      await loadData();
+      renderAll();
+      return;
+    }
+
+    // 3. Close open status dropdowns when clicking outside
+    if (!e.target.closest('.custom-status-dropdown')) {
+      document.querySelectorAll('.custom-status-dropdown.open').forEach(d => d.classList.remove('open'));
+    }
+
     const target = e.target.closest('button');
     if (!target) return;
 

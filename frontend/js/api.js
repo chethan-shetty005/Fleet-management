@@ -49,16 +49,27 @@ export async function fetchVehicles() {
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        return data.map(v => ({
-          id: v.v_id || v.id,
-          vehicleNo: v.license_plate || v.v_id,
-          type: v.vehicle_type || 'Compactor',
-          status: v.status || 'Active',
-          lastService: '12 Aug 2025',
-          driver: v.driver || 'Assigned Driver',
-          fuelType: v.fuel_type || 'Diesel',
-          mileage: v.current_mileage || 0
-        }));
+        data.forEach(v => {
+          const vNo = v.license_plate || v.v_id || v.id;
+          const existing = localState.vehicles.find(item => item.id === vNo || item.vehicleNo === vNo || item.id === v.v_id);
+          if (existing) {
+            existing.status = v.status || existing.status;
+            existing.type = v.vehicle_type || existing.type;
+            existing.fuelType = v.fuel_type || existing.fuelType;
+            existing.mileage = v.current_mileage || existing.mileage;
+          } else {
+            localState.vehicles.push({
+              id: v.v_id || v.id || vNo,
+              vehicleNo: vNo,
+              type: v.vehicle_type || 'Compactor',
+              status: v.status || 'Active',
+              lastService: '12 Aug 2025',
+              driver: v.driver || 'Assigned Driver',
+              fuelType: v.fuel_type || 'Diesel',
+              mileage: v.current_mileage || 0
+            });
+          }
+        });
       }
     }
   } catch (err) {
@@ -157,6 +168,51 @@ export async function deleteVehicle(id) {
   return true;
 }
 
+export async function updateVehicleStatus(id, newStatus) {
+  const v = localState.vehicles.find(item => item.id === id || item.vehicleNo === id);
+  if (v) {
+    const oldStatus = v.status;
+    v.status = newStatus;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (!res.ok) {
+        await fetch(`${API_BASE_URL}/vehicles/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+      }
+    } catch (err) {
+      console.log('Local store vehicle status update fallback');
+    }
+
+    let active = 0;
+    let inactive = 0;
+    localState.vehicles.forEach(item => {
+      if (item.status === 'Active') active++;
+      else inactive++;
+    });
+    localState.kpis.activeVehicles = active;
+    localState.kpis.inactiveVehicles = inactive;
+
+    localState.auditRecords.unshift({
+      id: `AUD-${Date.now()}`,
+      dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      user: 'Admin User',
+      action: 'Vehicle Updated',
+      entity: 'Vehicle',
+      entityId: v.vehicleNo || v.id,
+      details: `Updated status from ${oldStatus} to ${newStatus}`
+    });
+  }
+  return v;
+}
+
 export async function deleteFuelRecord(id) {
   localState.fuelRecords = localState.fuelRecords.filter(f => f.id !== id);
   recalculateChartData();
@@ -164,17 +220,33 @@ export async function deleteFuelRecord(id) {
 }
 
 export async function resolveIssue(issueId) {
+  return await updateIssueStatus(issueId, 'Resolved');
+}
+
+export async function updateIssueStatus(issueId, newStatus) {
   const issue = localState.vehicleIssues.find(i => i.issueId === issueId || i.id === issueId);
   if (issue) {
-    issue.status = 'Resolved';
+    const oldStatus = issue.status;
+    issue.status = newStatus;
+
+    try {
+      await fetch(`${API_BASE_URL}/issues/${issueId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+    } catch (err) {
+      console.log('Local store issue status update fallback');
+    }
+
     localState.auditRecords.unshift({
       id: `AUD-${Date.now()}`,
       dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
       user: 'Admin User',
-      action: 'Issue Resolved',
+      action: 'Issue Status Updated',
       entity: 'Vehicle Issue',
       entityId: issue.issueId,
-      details: `Resolved issue for vehicle ${issue.vehicleNo}`
+      details: `Updated status for ${issue.issueId} (${issue.vehicleNo}) from ${oldStatus} to ${newStatus}`
     });
   }
   return issue;
