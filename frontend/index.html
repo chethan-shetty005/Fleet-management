@@ -158,18 +158,6 @@
         <!-- Global Filters Bar -->
         <section class="filter-bar">
           <div class="filter-group">
-            <span class="filter-label">Ward</span>
-            <select class="filter-select" id="filterWard">
-              <option value="All">All Wards</option>
-              <option value="Ward 1">Ward 1</option>
-              <option value="Ward 2">Ward 2</option>
-              <option value="Ward 3">Ward 3</option>
-              <option value="Ward 4">Ward 4</option>
-              <option value="Ward 5">Ward 5</option>
-            </select>
-          </div>
-
-          <div class="filter-group">
             <span class="filter-label">Vehicle Type</span>
             <select class="filter-select" id="filterType">
               <option value="All">All Types</option>
@@ -233,7 +221,6 @@
                   <tr>
                     <th>Vehicle No.</th>
                     <th>Type</th>
-                    <th>Ward</th>
                     <th>Status</th>
                     <th>Last Service</th>
                     <th style="text-align: right;">Actions</th>
@@ -261,7 +248,6 @@
                     <th>Fuel Type</th>
                     <th>Liters (L)</th>
                     <th>Amount (₹)</th>
-                    <th>Ward</th>
                     <th style="text-align: right;">Actions</th>
                   </tr>
                 </thead>
@@ -315,10 +301,10 @@
               <div class="chart-block">
                 <span class="chart-subtitle">Fuel by Vehicle Type (L)</span>
                 <div class="donut-legend-wrapper">
-                  <div class="canvas-wrapper" style="width: 140px; height: 140px;">
+                  <div class="donut-wrapper">
                     <canvas id="donutVehicleTypeCanvas"></canvas>
                   </div>
-                  <div class="legend-list">
+                  <div class="legend-list" id="legendVehicleType">
                     <div class="legend-item"><span class="legend-color-dot" style="background:#3B82F6;"></span>Compactor 5,650 L (45.4%)</div>
                     <div class="legend-item"><span class="legend-color-dot" style="background:#A855F7;"></span>Tipper 3,250 L (26.1%)</div>
                     <div class="legend-item"><span class="legend-color-dot" style="background:#EAB308;"></span>Tractor 1,950 L (15.7%)</div>
@@ -329,7 +315,7 @@
             </div>
           </div>
 
-          <!-- Row 3: Audit Records & Ward/Fuel Distribution Charts -->
+          <!-- Row 3: Audit Records & Fleet/Fuel Distribution Charts -->
           <div class="card" id="cardAuditRecords">
             <div class="card-header">
               <h2 class="card-title">Audit Records</h2>
@@ -357,12 +343,12 @@
 
           <div class="card" id="cardEfficiencyCharts">
             <div class="card-header">
-              <h2 class="card-title">Ward Efficiency & Distribution</h2>
+              <h2 class="card-title">Fleet Efficiency & Distribution</h2>
               <a href="#" class="view-all-link" data-tab="analysis">View all</a>
             </div>
             <div class="chart-split-container">
               <div class="chart-block">
-                <span class="chart-subtitle">Ward-wise Fuel Efficiency (km/L)</span>
+                <span class="chart-subtitle">Fleet Fuel Efficiency (km/L)</span>
                 <div class="canvas-wrapper">
                   <canvas id="barWardCanvas"></canvas>
                 </div>
@@ -370,10 +356,10 @@
               <div class="chart-block">
                 <span class="chart-subtitle">Fuel Type Distribution (L)</span>
                 <div class="donut-legend-wrapper">
-                  <div class="canvas-wrapper" style="width: 140px; height: 140px;">
+                  <div class="donut-wrapper">
                     <canvas id="donutFuelTypeCanvas"></canvas>
                   </div>
-                  <div class="legend-list">
+                  <div class="legend-list" id="legendFuelType">
                     <div class="legend-item"><span class="legend-color-dot" style="background:#2563EB;"></span>Diesel 9,850 L (79.1%)</div>
                     <div class="legend-item"><span class="legend-color-dot" style="background:#10B981;"></span>CNG 2,600 L (20.9%)</div>
                   </div>
@@ -416,16 +402,6 @@
               <option value="Tipper">Tipper</option>
               <option value="Tractor">Tractor</option>
               <option value="Loader">Loader</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Ward Assignment</label>
-            <select name="ward" class="form-select" required>
-              <option value="Ward 1">Ward 1</option>
-              <option value="Ward 2">Ward 2</option>
-              <option value="Ward 3">Ward 3</option>
-              <option value="Ward 4">Ward 4</option>
-              <option value="Ward 5">Ward 5</option>
             </select>
           </div>
           <div class="form-group">
@@ -494,16 +470,6 @@
           <div class="form-group">
             <label class="form-label">Total Amount (₹)</label>
             <input type="number" step="0.01" name="amount" class="form-input" placeholder="e.g. 7200.00" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Ward</label>
-            <select name="ward" class="form-select" required>
-              <option value="Ward 1">Ward 1</option>
-              <option value="Ward 2">Ward 2</option>
-              <option value="Ward 3">Ward 3</option>
-              <option value="Ward 4">Ward 4</option>
-              <option value="Ward 5">Ward 5</option>
-            </select>
           </div>
         </div>
         <div class="modal-footer">

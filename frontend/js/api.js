@@ -53,7 +53,6 @@ export async function fetchVehicles() {
           id: v.v_id || v.id,
           vehicleNo: v.license_plate || v.v_id,
           type: v.vehicle_type || 'Compactor',
-          ward: v.ward || 'Ward 1',
           status: v.status || 'Active',
           lastService: '12 Aug 2025',
           driver: v.driver || 'Assigned Driver',
@@ -97,7 +96,6 @@ export async function addVehicle(vehicleData) {
     id: vehicleData.vehicleNo,
     vehicleNo: vehicleData.vehicleNo,
     type: vehicleData.type,
-    ward: vehicleData.ward,
     status: vehicleData.status || 'Active',
     lastService: 'Just now',
     driver: vehicleData.driver || 'Admin Assigned',
@@ -117,9 +115,10 @@ export async function addVehicle(vehicleData) {
     action: 'Vehicle Added',
     entity: 'Vehicle',
     entityId: newV.vehicleNo,
-    details: `Added new ${newV.type} vehicle (${newV.ward})`
+    details: `Added new ${newV.type} vehicle (${newV.vehicleNo})`
   });
 
+  recalculateChartData();
   return newV;
 }
 
@@ -130,8 +129,7 @@ export async function addFuelRecord(record) {
     vehicleNo: record.vehicleNo,
     fuelType: record.fuelType || 'Diesel',
     liters: Number(record.liters),
-    amount: Number(record.amount),
-    ward: record.ward || 'Ward 1'
+    amount: Number(record.amount)
   };
 
   localState.fuelRecords.unshift(newRecord);
@@ -148,17 +146,20 @@ export async function addFuelRecord(record) {
     details: `Added ${newRecord.liters.toFixed(2)} L for ${newRecord.vehicleNo}`
   });
 
+  recalculateChartData();
   return newRecord;
 }
 
 export async function deleteVehicle(id) {
   localState.vehicles = localState.vehicles.filter(v => v.id !== id && v.vehicleNo !== id);
   localState.kpis.totalVehicles = Math.max(0, localState.kpis.totalVehicles - 1);
+  recalculateChartData();
   return true;
 }
 
 export async function deleteFuelRecord(id) {
   localState.fuelRecords = localState.fuelRecords.filter(f => f.id !== id);
+  recalculateChartData();
   return true;
 }
 
@@ -177,6 +178,95 @@ export async function resolveIssue(issueId) {
     });
   }
   return issue;
+}
+
+export function recalculateChartData() {
+  const vehicles = localState.vehicles;
+  const fuelRecords = localState.fuelRecords;
+
+  // 1. Fuel by Vehicle Type
+  const typeTotals = { Compactor: 0, Tipper: 0, Tractor: 0, Loader: 0 };
+  fuelRecords.forEach(rec => {
+    const v = vehicles.find(item => item.vehicleNo === rec.vehicleNo || item.id === rec.vehicleNo);
+    const vType = v ? v.type : (rec.vehicleType || 'Compactor');
+    if (typeTotals[vType] !== undefined) {
+      typeTotals[vType] += rec.liters;
+    } else {
+      typeTotals[vType] = rec.liters;
+    }
+  });
+
+  const baseType = { Compactor: 5650, Tipper: 3250, Tractor: 1950, Loader: 1600 };
+  const totalLitersByT = {};
+  ['Compactor', 'Tipper', 'Tractor', 'Loader'].forEach(t => {
+    totalLitersByT[t] = (baseType[t] || 0) + (typeTotals[t] || 0);
+  });
+  const sumTypeLiters = Object.values(totalLitersByT).reduce((a, b) => a + b, 0) || 1;
+
+  localState.chartData.fuelByVehicleType = {
+    labels: ["Compactor", "Tipper", "Tractor", "Loader"],
+    values: ["Compactor", "Tipper", "Tractor", "Loader"].map(t => Math.round(totalLitersByT[t])),
+    percentages: ["Compactor", "Tipper", "Tractor", "Loader"].map(t => Number(((totalLitersByT[t] / sumTypeLiters) * 100).toFixed(1))),
+    colors: ["#3B82F6", "#A855F7", "#EAB308", "#22C55E"]
+  };
+
+  // 2. Fuel Type Distribution (Diesel vs CNG)
+  const fuelTypeTotals = { Diesel: 0, CNG: 0 };
+  fuelRecords.forEach(rec => {
+    const fType = rec.fuelType || 'Diesel';
+    if (fuelTypeTotals[fType] !== undefined) {
+      fuelTypeTotals[fType] += rec.liters;
+    } else {
+      fuelTypeTotals[fType] = rec.liters;
+    }
+  });
+
+  const baseFuelType = { Diesel: 9850, CNG: 2600 };
+  const totalFuelT = {
+    Diesel: baseFuelType.Diesel + (fuelTypeTotals.Diesel || 0),
+    CNG: baseFuelType.CNG + (fuelTypeTotals.CNG || 0)
+  };
+  const sumFuelType = (totalFuelT.Diesel + totalFuelT.CNG) || 1;
+
+  localState.chartData.fuelTypeDistribution = {
+    labels: ["Diesel", "CNG"],
+    values: [Math.round(totalFuelT.Diesel), Math.round(totalFuelT.CNG)],
+    percentages: [
+      Number(((totalFuelT.Diesel / sumFuelType) * 100).toFixed(1)),
+      Number(((totalFuelT.CNG / sumFuelType) * 100).toFixed(1))
+    ],
+    colors: ["#2563EB", "#10B981"]
+  };
+
+  // 3. Fleet Efficiency (km/L per vehicle type)
+  const typeCounts = { Compactor: 0, Tipper: 0, Tractor: 0, Loader: 0, Truck: 0 };
+  vehicles.forEach(v => {
+    const t = v.type || 'Compactor';
+    if (typeCounts[t] !== undefined) typeCounts[t] += 1;
+    else typeCounts[t] = 1;
+  });
+
+  const baseEff = { Compactor: 8.6, Tipper: 7.4, Tractor: 6.8, Loader: 8.1, Truck: 7.2 };
+  localState.chartData.fleetEfficiency = {
+    labels: ["Compactor", "Tipper", "Tractor", "Loader", "Truck"],
+    values: ["Compactor", "Tipper", "Tractor", "Loader", "Truck"].map(t => {
+      const addedCount = typeCounts[t] || 0;
+      return Number(Math.min(9.9, Math.max(5.0, baseEff[t] + (addedCount * 0.1))).toFixed(1));
+    }),
+    color: "#22C55E"
+  };
+
+  // 4. Fuel Consumption Trend (L)
+  const addedRecentLiters = fuelRecords.reduce((acc, r) => acc + (r.liters || 0), 0);
+  const updatedLastValue = Math.round(9100 + addedRecentLiters * 0.5);
+
+  localState.chartData.fuelTrend = {
+    labels: ["21 Aug", "22 Aug", "23 Aug", "24 Aug", "25 Aug", "26 Aug", "27 Aug"],
+    values: [7200, 6800, 8100, 8400, 8300, 9800, updatedLastValue]
+  };
+
+  // Update total KPIs
+  localState.kpis.fuelConsumedLiters = Math.round(sumTypeLiters);
 }
 
 export function getLocalState() {

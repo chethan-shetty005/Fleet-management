@@ -32,7 +32,6 @@ export function initModals({ onAddVehicle, onAddFuelRecord }) {
     const vehicleData = {
       vehicleNo: formData.get('vehicleNo'),
       type: formData.get('type'),
-      ward: formData.get('ward'),
       fuelType: formData.get('fuelType'),
       status: formData.get('status'),
       driver: formData.get('driver'),
@@ -52,7 +51,6 @@ export function initModals({ onAddVehicle, onAddFuelRecord }) {
       fuelType: formData.get('fuelType'),
       liters: formData.get('liters'),
       amount: formData.get('amount'),
-      ward: formData.get('ward'),
       date: formData.get('date')
     };
     await onAddFuelRecord(fuelData);

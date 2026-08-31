@@ -17,22 +17,22 @@ export const INITIAL_KPIS = {
 };
 
 export const INITIAL_VEHICLES = [
-  { id: "KA01AB1234", vehicleNo: "KA01AB1234", type: "Compactor", ward: "Ward 1", status: "Active", lastService: "12 Aug 2025", driver: "Ramesh Kumar", fuelType: "Diesel", mileage: 42350 },
-  { id: "KA01CD5678", vehicleNo: "KA01CD5678", type: "Tipper", ward: "Ward 2", status: "Active", lastService: "08 Aug 2025", driver: "Suresh Patil", fuelType: "Diesel", mileage: 38200 },
-  { id: "KA01EF9012", vehicleNo: "KA01EF9012", type: "Tractor", ward: "Ward 3", status: "Inactive", lastService: "25 Jul 2025", driver: "Mahesh Singh", fuelType: "Diesel", mileage: 51900 },
-  { id: "KA01GH3456", vehicleNo: "KA01GH3456", type: "Compactor", ward: "Ward 4", status: "Active", lastService: "10 Aug 2025", driver: "Anand Verma", fuelType: "CNG", mileage: 29400 },
-  { id: "KA01IJ7890", vehicleNo: "KA01IJ7890", type: "Loader", ward: "Ward 5", status: "Active", lastService: "05 Aug 2025", driver: "Vijay Gowda", fuelType: "Diesel", mileage: 18750 },
-  { id: "KA01KL2345", vehicleNo: "KA01KL2345", type: "Compactor", ward: "Ward 1", status: "Maintenance", lastService: "23 Aug 2025", driver: "Praveen R", fuelType: "Diesel", mileage: 64100 },
-  { id: "KA01MN5678", vehicleNo: "KA01MN5678", type: "Tipper", ward: "Ward 2", status: "Active", lastService: "22 Aug 2025", driver: "Kiran Naik", fuelType: "Diesel", mileage: 31050 }
+  { id: "KA01AB1234", vehicleNo: "KA01AB1234", type: "Compactor", status: "Active", lastService: "12 Aug 2025", driver: "Ramesh Kumar", fuelType: "Diesel", mileage: 42350 },
+  { id: "KA01CD5678", vehicleNo: "KA01CD5678", type: "Tipper", status: "Active", lastService: "08 Aug 2025", driver: "Suresh Patil", fuelType: "Diesel", mileage: 38200 },
+  { id: "KA01EF9012", vehicleNo: "KA01EF9012", type: "Tractor", status: "Inactive", lastService: "25 Jul 2025", driver: "Mahesh Singh", fuelType: "Diesel", mileage: 51900 },
+  { id: "KA01GH3456", vehicleNo: "KA01GH3456", type: "Compactor", status: "Active", lastService: "10 Aug 2025", driver: "Anand Verma", fuelType: "CNG", mileage: 29400 },
+  { id: "KA01IJ7890", vehicleNo: "KA01IJ7890", type: "Loader", status: "Active", lastService: "05 Aug 2025", driver: "Vijay Gowda", fuelType: "Diesel", mileage: 18750 },
+  { id: "KA01KL2345", vehicleNo: "KA01KL2345", type: "Compactor", status: "Maintenance", lastService: "23 Aug 2025", driver: "Praveen R", fuelType: "Diesel", mileage: 64100 },
+  { id: "KA01MN5678", vehicleNo: "KA01MN5678", type: "Tipper", status: "Active", lastService: "22 Aug 2025", driver: "Kiran Naik", fuelType: "Diesel", mileage: 31050 }
 ];
 
 export const INITIAL_FUEL_RECORDS = [
-  { id: "FR-2025-0842", date: "27 Aug 2025", vehicleNo: "KA01AB1234", fuelType: "Diesel", liters: 120.00, amount: 7200.00, ward: "Ward 1" },
-  { id: "FR-2025-0841", date: "27 Aug 2025", vehicleNo: "KA01CD5678", fuelType: "Diesel", liters: 150.00, amount: 9000.00, ward: "Ward 2" },
-  { id: "FR-2025-0840", date: "26 Aug 2025", vehicleNo: "KA01EF9012", fuelType: "Diesel", liters: 80.00, amount: 4800.00, ward: "Ward 3" },
-  { id: "FR-2025-0839", date: "26 Aug 2025", vehicleNo: "KA01GH3456", fuelType: "CNG", liters: 110.00, amount: 6600.00, ward: "Ward 4" },
-  { id: "FR-2025-0838", date: "25 Aug 2025", vehicleNo: "KA01IJ7890", fuelType: "Diesel", liters: 90.00, amount: 5400.00, ward: "Ward 5" },
-  { id: "FR-2025-0837", date: "25 Aug 2025", vehicleNo: "KA01KL2345", fuelType: "Diesel", liters: 135.00, amount: 8100.00, ward: "Ward 1" }
+  { id: "FR-2025-0842", date: "27 Aug 2025", vehicleNo: "KA01AB1234", fuelType: "Diesel", liters: 120.00, amount: 7200.00 },
+  { id: "FR-2025-0841", date: "27 Aug 2025", vehicleNo: "KA01CD5678", fuelType: "Diesel", liters: 150.00, amount: 9000.00 },
+  { id: "FR-2025-0840", date: "26 Aug 2025", vehicleNo: "KA01EF9012", fuelType: "Diesel", liters: 80.00, amount: 4800.00 },
+  { id: "FR-2025-0839", date: "26 Aug 2025", vehicleNo: "KA01GH3456", fuelType: "CNG", liters: 110.00, amount: 6600.00 },
+  { id: "FR-2025-0838", date: "25 Aug 2025", vehicleNo: "KA01IJ7890", fuelType: "Diesel", liters: 90.00, amount: 5400.00 },
+  { id: "FR-2025-0837", date: "25 Aug 2025", vehicleNo: "KA01KL2345", fuelType: "Diesel", liters: 135.00, amount: 8100.00 }
 ];
 
 export const INITIAL_VEHICLE_ISSUES = [
@@ -62,8 +62,8 @@ export const CHART_DATA = {
     percentages: [45.4, 26.1, 15.7, 12.8],
     colors: ["#3B82F6", "#A855F7", "#EAB308", "#22C55E"]
   },
-  wardEfficiency: {
-    labels: ["Ward 1", "Ward 2", "Ward 3", "Ward 4", "Ward 5"],
+  fleetEfficiency: {
+    labels: ["Compactor", "Tipper", "Tractor", "Loader", "Truck"],
     values: [8.6, 7.4, 6.8, 8.1, 7.2],
     color: "#22C55E"
   },

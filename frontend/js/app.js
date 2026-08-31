@@ -14,7 +14,6 @@ let state = {
   issues: [],
   audits: [],
   filters: {
-    ward: 'All',
     type: 'All',
     status: 'All',
     fuelType: 'All',
@@ -30,13 +29,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     onAddVehicle: async (vData) => {
       await addVehicle(vData);
       await loadData();
+      renderAll();
     },
     onAddFuelRecord: async (fData) => {
       await addFuelRecord(fData);
       await loadData();
+      renderAll();
     }
   });
   renderAll();
+  setTimeout(() => {
+    renderCharts();
+  }, 50);
+  setupChartResizeObserver();
 });
 
 async function loadData() {
@@ -142,9 +147,8 @@ function renderKPIs() {
 
 /* Filter Helper */
 function filterList(list, fields) {
-  const { ward, type, status, fuelType, search } = state.filters;
+  const { type, status, fuelType, search } = state.filters;
   return list.filter(item => {
-    if (ward !== 'All' && item.ward && item.ward !== ward) return false;
     if (type !== 'All' && item.type && item.type !== type) return false;
     if (status !== 'All' && item.status && item.status !== status) return false;
     if (fuelType !== 'All' && item.fuelType && item.fuelType !== fuelType) return false;
@@ -163,7 +167,7 @@ function renderVehiclesTable() {
   const countFooter = document.getElementById('footerVehiclesCount');
   if (!tbody) return;
 
-  const filtered = filterList(state.vehicles, ['vehicleNo', 'type', 'ward', 'driver']);
+  const filtered = filterList(state.vehicles, ['vehicleNo', 'type', 'driver']);
   if (countFooter) countFooter.textContent = `Showing 1 to ${Math.min(5, filtered.length)} of ${state.vehicles.length} vehicles`;
 
   tbody.innerHTML = filtered.slice(0, 5).map(v => {
@@ -177,7 +181,6 @@ function renderVehiclesTable() {
           </div>
         </td>
         <td>${v.type}</td>
-        <td>${v.ward}</td>
         <td><span class="badge ${badgeClass}">${v.status}</span></td>
         <td>${v.lastService}</td>
         <td style="text-align: right;">
@@ -200,7 +203,7 @@ function renderFuelRecordsTable() {
   const countFooter = document.getElementById('footerFuelCount');
   if (!tbody) return;
 
-  const filtered = filterList(state.fuelRecords, ['vehicleNo', 'fuelType', 'ward', 'date']);
+  const filtered = filterList(state.fuelRecords, ['vehicleNo', 'fuelType', 'date']);
   if (countFooter) countFooter.textContent = `Showing 1 to ${Math.min(5, filtered.length)} of ${state.fuelRecords.length} fuel records`;
 
   tbody.innerHTML = filtered.slice(0, 5).map(f => `
@@ -210,7 +213,6 @@ function renderFuelRecordsTable() {
       <td>${f.fuelType}</td>
       <td>${f.liters.toFixed(2)}</td>
       <td>₹${f.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-      <td>${f.ward}</td>
       <td style="text-align: right;">
         <div class="action-btns" style="justify-content: flex-end;">
           <button class="action-icon-btn view-fuel" data-id="${f.id}" title="View Details">
@@ -271,7 +273,7 @@ function renderAuditRecordsTable() {
       <td>${a.action}</td>
       <td>${a.entity}</td>
       <td>${a.entityId}</td>
-      <td>${a.details}</td>
+      <td class="cell-truncate" title="${a.details}">${a.details}</td>
     </tr>
   `).join('');
 }
@@ -280,19 +282,49 @@ function renderAuditRecordsTable() {
 function renderCharts() {
   const local = getLocalState();
   renderLineChart('trendChartCanvas', local.chartData.fuelTrend);
-  renderDonutChart('donutVehicleTypeCanvas', local.chartData.fuelByVehicleType, "12,450 L");
-  renderBarChart('barWardCanvas', local.chartData.wardEfficiency);
-  renderDonutChart('donutFuelTypeCanvas', local.chartData.fuelTypeDistribution, "12,450 L");
+  renderDonutChart('donutVehicleTypeCanvas', local.chartData.fuelByVehicleType, `${(local.kpis.fuelConsumedLiters || 12450).toLocaleString()} L`);
+  renderBarChart('barWardCanvas', local.chartData.fleetEfficiency);
+  renderDonutChart('donutFuelTypeCanvas', local.chartData.fuelTypeDistribution, `${(local.kpis.fuelConsumedLiters || 12450).toLocaleString()} L`);
+
+  updateChartLegends(local.chartData);
+}
+
+function updateChartLegends(chartData) {
+  const legendVehicle = document.getElementById('legendVehicleType');
+  if (legendVehicle && chartData.fuelByVehicleType) {
+    const d = chartData.fuelByVehicleType;
+    legendVehicle.innerHTML = d.labels.map((lbl, i) => `
+      <div class="legend-item">
+        <span class="legend-color-dot" style="background:${d.colors[i]};"></span>
+        ${lbl} ${d.values[i].toLocaleString()} L (${d.percentages[i]}%)
+      </div>
+    `).join('');
+  }
+
+  const legendFuel = document.getElementById('legendFuelType');
+  if (legendFuel && chartData.fuelTypeDistribution) {
+    const d = chartData.fuelTypeDistribution;
+    legendFuel.innerHTML = d.labels.map((lbl, i) => `
+      <div class="legend-item">
+        <span class="legend-color-dot" style="background:${d.colors[i]};"></span>
+        ${lbl} ${d.values[i].toLocaleString()} L (${d.percentages[i]}%)
+      </div>
+    `).join('');
+  }
+}
+
+function setupChartResizeObserver() {
+  if (typeof ResizeObserver === 'undefined') return;
+  const observer = new ResizeObserver(() => {
+    requestAnimationFrame(() => renderCharts());
+  });
+
+  const containers = document.querySelectorAll('.canvas-wrapper, .donut-wrapper');
+  containers.forEach(el => observer.observe(el));
 }
 
 /* Event Listeners */
 function setupEventListeners() {
-  // Filter Dropdowns
-  document.getElementById('filterWard')?.addEventListener('change', (e) => {
-    state.filters.ward = e.target.value;
-    renderAll();
-  });
-
   document.getElementById('filterType')?.addEventListener('change', (e) => {
     state.filters.type = e.target.value;
     renderAll();
@@ -314,13 +346,16 @@ function setupEventListeners() {
   });
 
   document.getElementById('resetFiltersBtn')?.addEventListener('click', () => {
-    state.filters = { ward: 'All', type: 'All', status: 'All', fuelType: 'All', search: '' };
-    document.getElementById('filterWard').value = 'All';
+    state.filters = { type: 'All', status: 'All', fuelType: 'All', search: '' };
     document.getElementById('filterType').value = 'All';
     document.getElementById('filterStatus').value = 'All';
     document.getElementById('filterFuelType').value = 'All';
     document.getElementById('searchInput').value = '';
     renderAll();
+  });
+
+  window.addEventListener('resize', () => {
+    renderCharts();
   });
 
   // Table actions delegation
@@ -336,7 +371,6 @@ function setupEventListeners() {
           <div style="display:flex; flex-direction:column; gap:10px; font-size:14px;">
             <p><strong>Registration No:</strong> ${v.vehicleNo}</p>
             <p><strong>Type:</strong> ${v.type}</p>
-            <p><strong>Ward Assignment:</strong> ${v.ward}</p>
             <p><strong>Status:</strong> ${v.status}</p>
             <p><strong>Fuel Type:</strong> ${v.fuelType}</p>
             <p><strong>Driver:</strong> ${v.driver}</p>
