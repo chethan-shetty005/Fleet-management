@@ -85,20 +85,29 @@ export async function fetchVehicles() {
     const res = await fetch(`${API_BASE_URL}/vehicles`, { signal: AbortSignal.timeout(1500) });
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data)) {
-        localState.vehicles = data.map(v => {
+      if (Array.isArray(data) && data.length > 0) {
+        data.forEach(v => {
           const vNo = v.license_plate || v.v_id || v.id;
-          return {
-            id: v.v_id || v.id || vNo,
-            vehicleNo: vNo,
-            type: v.vehicle_type || 'Compactor',
-            status: v.status || 'Active',
-            lastService: '12 Aug 2025',
-            driver: v.driver || 'Assigned Driver',
-            fuelType: v.fuel_type || 'Diesel',
-            mileage: v.current_mileage || 0
-          };
+          const existing = localState.vehicles.find(item => item.id === vNo || item.vehicleNo === vNo);
+          if (existing) {
+            existing.status = v.status || existing.status;
+            existing.type = v.vehicle_type || existing.type;
+            existing.fuelType = v.fuel_type || existing.fuelType;
+            existing.mileage = v.current_mileage || existing.mileage;
+          } else {
+            localState.vehicles.push({
+              id: v.v_id || v.id || vNo,
+              vehicleNo: vNo,
+              type: v.vehicle_type || 'Compactor',
+              status: v.status || 'Active',
+              lastService: '12 Aug 2025',
+              driver: v.driver || 'Assigned Driver',
+              fuelType: v.fuel_type || 'Diesel',
+              mileage: v.current_mileage || 0
+            });
+          }
         });
+        saveLocalState();
       }
     }
   } catch (err) {
@@ -158,6 +167,7 @@ export async function addVehicle(vehicleData) {
     details: `Added new ${newV.type} vehicle (${newV.vehicleNo})`
   });
 
+  saveLocalState();
   recalculateChartData();
   return newV;
 }
@@ -167,8 +177,13 @@ export async function fetchFuelRecords() {
     const res = await fetch(`${API_BASE_URL}/fuel`, { signal: AbortSignal.timeout(1500) });
     if (res.ok) {
       const dbRecords = await res.json();
-      if (Array.isArray(dbRecords)) {
-        localState.fuelRecords = dbRecords;
+      if (Array.isArray(dbRecords) && dbRecords.length > 0) {
+        dbRecords.forEach(dbR => {
+          if (!localState.fuelRecords.some(r => r.id === dbR.id)) {
+            localState.fuelRecords.unshift(dbR);
+          }
+        });
+        saveLocalState();
         recalculateChartData();
       }
     }

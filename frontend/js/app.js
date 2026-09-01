@@ -3,9 +3,9 @@
  * Integrates API Service, Custom Chart Canvas Renderer, and Interactive Modals.
  */
 
-import { fetchKPIs, fetchVehicles, fetchFuelRecords, addVehicle, addFuelRecord, addVehicleIssue, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js?v=10002';
-import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js?v=10002';
-import { initModals, openDetailModal } from './modals.js?v=10002';
+import { fetchKPIs, fetchVehicles, fetchFuelRecords, addVehicle, addFuelRecord, addVehicleIssue, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js?v=10004';
+import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js?v=10004';
+import { initModals, openDetailModal } from './modals.js?v=10004';
 
 let state = {
   kpis: {},
@@ -1116,8 +1116,17 @@ function setupEventListeners() {
     }
   });
 
+  // View All buttons trigger popup window modal showing entire list
+  document.querySelectorAll('.view-all-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const tab = link.dataset.tab;
+      if (tab) openFullListModal(tab);
+    });
+  });
+
   // Sidebar Nav Tabs
-  document.querySelectorAll('.nav-item, .view-all-link').forEach(link => {
+  document.querySelectorAll('.nav-item').forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const tab = link.dataset.tab;
@@ -1152,6 +1161,256 @@ function setupEventListeners() {
     await loadData();
     renderAll();
   });
+}
+
+function openFullListModal(tab) {
+  if (tab === 'vehicles') {
+    const filtered = filterList(state.vehicles, ['vehicleNo', 'type', 'driver'], 'lastService');
+    const tableRows = filtered.length === 0
+      ? `<tr><td colspan="7" style="text-align:center; padding:24px; color:#64748b;">No vehicles match current filter criteria</td></tr>`
+      : filtered.map(v => {
+          const badgeClass = v.status === 'Active' ? 'badge-active' : v.status === 'Inactive' ? 'badge-inactive' : v.status === 'Maintenance' ? 'badge-maintenance' : 'badge-out-of-service';
+          return `
+            <tr>
+              <td><strong>${v.vehicleNo}</strong></td>
+              <td>${v.type}</td>
+              <td><span class="badge ${badgeClass}">${v.status}</span></td>
+              <td>${v.fuelType}</td>
+              <td>${v.driver}</td>
+              <td>${v.lastService}</td>
+              <td>${(v.mileage || 0).toLocaleString()} km</td>
+            </tr>
+          `;
+        }).join('');
+
+    const contentHtml = `
+      <div class="popup-summary-bar">
+        <span>Showing all ${filtered.length} of ${state.vehicles.length} vehicles</span>
+        <span>Filtered List View</span>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Vehicle No.</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Fuel Type</th>
+              <th>Driver</th>
+              <th>Last Service</th>
+              <th>Odometer</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    `;
+    openDetailModal('All Vehicles List', contentHtml, true);
+    return;
+  }
+
+  if (tab === 'fuel') {
+    const filtered = filterList(state.fuelRecords, ['vehicleNo', 'fuelType', 'date'], 'date');
+    const totalLiters = filtered.reduce((acc, f) => acc + (f.liters || 0), 0);
+    const totalSpend = filtered.reduce((acc, f) => acc + (f.amount || 0), 0);
+
+    const tableRows = filtered.length === 0
+      ? `<tr><td colspan="5" style="text-align:center; padding:24px; color:#64748b;">No fuel records match current filter criteria</td></tr>`
+      : filtered.map(f => {
+          const unit = getFuelUnit(f.fuelType);
+          return `
+            <tr>
+              <td>${f.date}</td>
+              <td><strong>${f.vehicleNo}</strong></td>
+              <td>${f.fuelType}</td>
+              <td>${f.liters.toFixed(2)} ${unit}</td>
+              <td>₹${f.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+            </tr>
+          `;
+        }).join('');
+
+    const contentHtml = `
+      <div class="popup-summary-bar">
+        <span>Showing all ${filtered.length} of ${state.fuelRecords.length} fuel logs</span>
+        <span>Total Fuel: ${Math.round(totalLiters).toLocaleString()} L | Spend: ₹${Math.round(totalSpend).toLocaleString('en-IN')}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Vehicle No.</th>
+              <th>Fuel Type</th>
+              <th>Quantity</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    `;
+    openDetailModal('All Fuel Records', contentHtml, true);
+    return;
+  }
+
+  if (tab === 'issues') {
+    const filtered = filterList(state.issues, ['issueId', 'vehicleNo', 'issue', 'severity', 'status'], 'reportedOn');
+    const tableRows = filtered.length === 0
+      ? `<tr><td colspan="6" style="text-align:center; padding:24px; color:#64748b;">No maintenance issues match current filter criteria</td></tr>`
+      : filtered.map(i => {
+          const sevClass = i.severity === 'High' ? 'badge-high' : i.severity === 'Medium' ? 'badge-medium' : 'badge-low';
+          const statusClass = i.status === 'Open' ? 'badge-open' : i.status === 'In Progress' ? 'badge-in-progress' : i.status === 'Resolved' ? 'badge-resolved' : 'badge-closed';
+          return `
+            <tr>
+              <td><strong>${i.issueId}</strong></td>
+              <td>${i.vehicleNo}</td>
+              <td>${i.issue}</td>
+              <td><span class="badge ${sevClass}">${i.severity}</span></td>
+              <td><span class="badge ${statusClass}">${i.status}</span></td>
+              <td>${i.reportedOn}</td>
+            </tr>
+          `;
+        }).join('');
+
+    const contentHtml = `
+      <div class="popup-summary-bar">
+        <span>Showing all ${filtered.length} of ${state.issues.length} maintenance issues</span>
+        <span>Filtered List View</span>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Issue ID</th>
+              <th>Vehicle No.</th>
+              <th>Issue Description</th>
+              <th>Severity</th>
+              <th>Status</th>
+              <th>Reported On</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    `;
+    openDetailModal('All Vehicle Issues', contentHtml, true);
+    return;
+  }
+
+  if (tab === 'audits') {
+    const filtered = filterList(state.audits, ['user', 'action', 'entity', 'entityId', 'details'], 'dateTime');
+    const tableRows = filtered.length === 0
+      ? `<tr><td colspan="6" style="text-align:center; padding:24px; color:#64748b;">No audit records found</td></tr>`
+      : filtered.map(a => `
+          <tr>
+            <td>${a.dateTime}</td>
+            <td><strong>${a.user}</strong></td>
+            <td>${a.action}</td>
+            <td>${a.entity}</td>
+            <td>${a.entityId}</td>
+            <td class="cell-truncate" title="${a.details}">${a.details}</td>
+          </tr>
+        `).join('');
+
+    const contentHtml = `
+      <div class="popup-summary-bar">
+        <span>Showing all ${filtered.length} of ${state.audits.length} audit logs</span>
+        <span>System Log History</span>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>User</th>
+              <th>Action</th>
+              <th>Entity</th>
+              <th>Entity ID</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    `;
+    openDetailModal('All System Audit Logs', contentHtml, true);
+    return;
+  }
+
+  if (tab === 'analysis') {
+    const filteredVehicles = filterList(state.vehicles, ['vehicleNo', 'type', 'driver'], 'lastService');
+    const filteredFuelRecords = filterList(state.fuelRecords, ['vehicleNo', 'fuelType', 'date'], 'date');
+
+    const typeTotals = {};
+    const typeKm = {};
+    const typeCount = {};
+
+    filteredVehicles.forEach(v => {
+      const t = v.type || 'Compactor';
+      typeCount[t] = (typeCount[t] || 0) + 1;
+      typeKm[t] = (typeKm[t] || 0) + (v.mileage || 0);
+    });
+
+    filteredFuelRecords.forEach(f => {
+      const v = filteredVehicles.find(item => item.vehicleNo === f.vehicleNo || item.id === f.vehicleNo);
+      const t = v ? v.type : (f.fuelType || 'Compactor');
+      typeTotals[t] = (typeTotals[t] || 0) + (f.liters || 0);
+    });
+
+    const allTypes = Array.from(new Set([...Object.keys(typeCount), ...Object.keys(typeTotals), "Compactor", "Tipper", "Tractor", "Loader", "Truck"]));
+    const totalLiters = Object.values(typeTotals).reduce((a, b) => a + b, 0);
+
+    const rows = allTypes.map(t => {
+      const vCount = typeCount[t] || 0;
+      const liters = typeTotals[t] || 0;
+      const kms = typeKm[t] || 0;
+      const eff = (liters > 0 && kms > 0) ? (kms / liters).toFixed(1) : '0.0';
+      const pct = totalLiters > 0 ? ((liters / totalLiters) * 100).toFixed(1) : '0.0';
+
+      return `
+        <tr>
+          <td><strong>${t}</strong></td>
+          <td>${vCount}</td>
+          <td>${Math.round(liters).toLocaleString()} L</td>
+          <td>${eff} km/L</td>
+          <td>${pct}%</td>
+        </tr>
+      `;
+    }).join('');
+
+    const contentHtml = `
+      <div class="popup-summary-bar">
+        <span>Fleet Analytics & Fuel Breakdown</span>
+        <span>Total Fleet Fuel: ${Math.round(totalLiters).toLocaleString()} L</span>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Vehicle Category</th>
+              <th>Vehicles Count</th>
+              <th>Fuel Consumed (L)</th>
+              <th>Avg Efficiency</th>
+              <th>Fuel Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    `;
+    openDetailModal('Fleet Analytics & Consumption Breakdown', contentHtml, true);
+    return;
+  }
 }
 
 export function exportFleetData() {

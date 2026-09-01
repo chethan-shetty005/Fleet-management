@@ -121,10 +121,19 @@ export function initModals({ onAddVehicle, onAddFuelRecord, onRaiseIssue }) {
   });
 }
 
-export function openDetailModal(title, contentHtml) {
+export function openDetailModal(title, contentHtml, isLarge = false) {
   const detailModal = document.getElementById('detailModal');
+  const modalCard = detailModal?.querySelector('.modal-card');
   const detailTitle = document.getElementById('detailTitle');
   const detailContent = document.getElementById('detailContent');
+
+  if (modalCard) {
+    if (isLarge) {
+      modalCard.classList.add('modal-lg');
+    } else {
+      modalCard.classList.remove('modal-lg');
+    }
+  }
 
   if (detailTitle) detailTitle.textContent = title;
   if (detailContent) detailContent.innerHTML = contentHtml;
