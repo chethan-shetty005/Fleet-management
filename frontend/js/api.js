@@ -235,6 +235,50 @@ export async function addFuelRecord(record) {
   return newRecord;
 }
 
+export async function addVehicleIssue(issueData) {
+  const newIssue = {
+    id: `ISS-${Date.now()}`,
+    issueId: `ISS-2025-${Math.floor(1000 + Math.random() * 9000)}`,
+    vehicleNo: issueData.vehicleNo,
+    issue: issueData.issue,
+    severity: issueData.severity || 'Medium',
+    status: issueData.status || 'Open',
+    reportedOn: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  };
+
+  try {
+    await fetch(`${API_BASE_URL}/maintenance`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        log_id: newIssue.issueId,
+        v_id: newIssue.vehicleNo,
+        description: newIssue.issue,
+        severity: newIssue.severity,
+        status: newIssue.status
+      })
+    });
+  } catch (err) {
+    console.log('DB issue save fallback to local storage:', err);
+  }
+
+  localState.vehicleIssues.unshift(newIssue);
+
+  localState.auditRecords.unshift({
+    id: `AUD-${Date.now()}`,
+    dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+    user: 'Admin User',
+    action: 'Issue Raised',
+    entity: 'Vehicle Issue',
+    entityId: newIssue.issueId,
+    details: `Raised ${newIssue.severity} severity issue for ${newIssue.vehicleNo}: ${newIssue.issue}`
+  });
+
+  saveLocalState();
+  recalculateChartData();
+  return newIssue;
+}
+
 export async function deleteVehicle(id) {
   localState.vehicles = localState.vehicles.filter(v => v.id !== id && v.vehicleNo !== id);
   localState.kpis.totalVehicles = Math.max(0, localState.kpis.totalVehicles - 1);

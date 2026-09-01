@@ -301,6 +301,17 @@ a {
   background-color: #E2DCFF;
 }
 
+.btn-warning {
+  background-color: #FEF3C7;
+  color: #D97706;
+  border: 1px solid #FDE68A;
+}
+
+.btn-warning:hover {
+  background-color: #FDE68A;
+  color: #B45309;
+}
+
 .btn-outline {
   background-color: var(--bg-card);
   color: var(--text-main);

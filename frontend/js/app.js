@@ -3,9 +3,9 @@
  * Integrates API Service, Custom Chart Canvas Renderer, and Interactive Modals.
  */
 
-import { fetchKPIs, fetchVehicles, fetchFuelRecords, addVehicle, addFuelRecord, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js?v=1009';
-import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js?v=1009';
-import { initModals, openDetailModal } from './modals.js?v=1009';
+import { fetchKPIs, fetchVehicles, fetchFuelRecords, addVehicle, addFuelRecord, addVehicleIssue, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js?v=1010';
+import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js?v=1010';
+import { initModals, openDetailModal } from './modals.js?v=1010';
 
 let state = {
   kpis: {},
@@ -39,6 +39,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
     onAddFuelRecord: async (fData) => {
       await addFuelRecord(fData);
+      await loadData();
+      renderAll();
+    },
+    onRaiseIssue: async (iData) => {
+      await addVehicleIssue(iData);
       await loadData();
       renderAll();
     }
@@ -147,6 +152,26 @@ async function loadData() {
   if (fuelTypeSelect) {
     fuelTypeSelect.removeEventListener('change', updateQuantityUnitUI);
     fuelTypeSelect.addEventListener('change', updateQuantityUnitUI);
+  }
+
+  // Sync raise issue modal vehicle select dropdown
+  const raiseVehicleSelect = document.getElementById('raiseIssueVehicleSelect');
+  if (raiseVehicleSelect) {
+    const maintVehicles = state.vehicles.filter(v => (v.status || '').toLowerCase() === 'maintenance' || (v.status || '').toLowerCase() === 'inactive');
+    const otherVehicles = state.vehicles.filter(v => (v.status || '').toLowerCase() !== 'maintenance' && (v.status || '').toLowerCase() !== 'inactive');
+
+    let optionsHtml = '';
+    if (maintVehicles.length > 0) {
+      optionsHtml += `<optgroup label="🛠️ Vehicles in Maintenance / Inactive">`;
+      optionsHtml += maintVehicles.map(v => `<option value="${v.vehicleNo}">${v.vehicleNo} (${v.type} - ${v.status})</option>`).join('');
+      optionsHtml += `</optgroup>`;
+    }
+    if (otherVehicles.length > 0) {
+      optionsHtml += `<optgroup label="🚗 Other Vehicles">`;
+      optionsHtml += otherVehicles.map(v => `<option value="${v.vehicleNo}">${v.vehicleNo} (${v.type} - ${v.status})</option>`).join('');
+      optionsHtml += `</optgroup>`;
+    }
+    raiseVehicleSelect.innerHTML = optionsHtml;
   }
 }
 

@@ -2,9 +2,10 @@
  * WASTRAQ Modal Handlers
  */
 
-export function initModals({ onAddVehicle, onAddFuelRecord }) {
+export function initModals({ onAddVehicle, onAddFuelRecord, onRaiseIssue }) {
   const addVehicleModal = document.getElementById('addVehicleModal');
   const addFuelModal = document.getElementById('addFuelModal');
+  const raiseIssueModal = document.getElementById('raiseIssueModal');
   const detailModal = document.getElementById('detailModal');
   const datePickerModal = document.getElementById('datePickerModal');
 
@@ -43,6 +44,10 @@ export function initModals({ onAddVehicle, onAddFuelRecord }) {
     if (vehicleSelect) vehicleSelect.dispatchEvent(new Event('change'));
   });
 
+  document.getElementById('openRaiseIssueBtn')?.addEventListener('click', () => {
+    raiseIssueModal?.classList.add('active');
+  });
+
   document.getElementById('datePickerBtn')?.addEventListener('click', () => {
     datePickerModal?.classList.add('active');
   });
@@ -52,6 +57,7 @@ export function initModals({ onAddVehicle, onAddFuelRecord }) {
     btn.addEventListener('click', () => {
       addVehicleModal?.classList.remove('active');
       addFuelModal?.classList.remove('active');
+      raiseIssueModal?.classList.remove('active');
       detailModal?.classList.remove('active');
       datePickerModal?.classList.remove('active');
     });
@@ -94,6 +100,23 @@ export function initModals({ onAddVehicle, onAddFuelRecord }) {
     };
     await onAddFuelRecord(fuelData);
     addFuelModal?.classList.remove('active');
+    e.target.reset();
+  });
+
+  // Form submission: Raise Issue
+  document.getElementById('raiseIssueForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const issueData = {
+      vehicleNo: formData.get('vehicleNo'),
+      issue: formData.get('issue'),
+      severity: formData.get('severity'),
+      status: formData.get('status')
+    };
+    if (typeof onRaiseIssue === 'function') {
+      await onRaiseIssue(issueData);
+    }
+    raiseIssueModal?.classList.remove('active');
     e.target.reset();
   });
 }
