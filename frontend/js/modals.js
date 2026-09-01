@@ -39,6 +39,8 @@ export function initModals({ onAddVehicle, onAddFuelRecord }) {
 
   document.getElementById('openAddFuelBtn')?.addEventListener('click', () => {
     addFuelModal?.classList.add('active');
+    const vehicleSelect = document.getElementById('fuelModalVehicleSelect');
+    if (vehicleSelect) vehicleSelect.dispatchEvent(new Event('change'));
   });
 
   document.getElementById('datePickerBtn')?.addEventListener('click', () => {

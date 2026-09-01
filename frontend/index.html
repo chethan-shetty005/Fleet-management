@@ -228,7 +228,7 @@
                     <th>Date</th>
                     <th>Vehicle No.</th>
                     <th>Fuel Type</th>
-                    <th>Liters (L)</th>
+                    <th>Quantity</th>
                     <th>Amount (₹)</th>
                     <th style="text-align: right;">Actions</th>
                   </tr>
@@ -458,7 +458,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Fuel Type</label>
-            <select name="fuelType" class="form-select" required>
+            <select name="fuelType" class="form-select" required id="fuelModalFuelTypeSelect">
               <option value="Diesel">Diesel</option>
               <option value="CNG">CNG</option>
               <option value="Electric">Electric</option>
@@ -467,8 +467,8 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Fuel Quantity (Liters)</label>
-            <input type="number" step="0.01" name="liters" class="form-input" placeholder="e.g. 120.00" required>
+            <label class="form-label" id="fuelQuantityLabel">Fuel Quantity (Liters)</label>
+            <input type="number" step="0.01" name="liters" id="fuelQuantityInput" class="form-input" placeholder="e.g. 120.00" required>
           </div>
           <div class="form-group">
             <label class="form-label">Total Amount (₹)</label>
@@ -535,6 +535,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=1006"></script>
+  <script type="module" src="js/app.js?v=1009"></script>
 </body>
 </html>

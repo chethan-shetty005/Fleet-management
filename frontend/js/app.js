@@ -3,9 +3,9 @@
  * Integrates API Service, Custom Chart Canvas Renderer, and Interactive Modals.
  */
 
-import { fetchKPIs, fetchVehicles, fetchFuelRecords, addVehicle, addFuelRecord, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js?v=1006';
-import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js?v=1006';
-import { initModals, openDetailModal } from './modals.js?v=1006';
+import { fetchKPIs, fetchVehicles, fetchFuelRecords, addVehicle, addFuelRecord, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js?v=1009';
+import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js?v=1009';
+import { initModals, openDetailModal } from './modals.js?v=1009';
 
 let state = {
   kpis: {},
@@ -84,6 +84,32 @@ function updateVehicleTypeSelects() {
   }
 }
 
+export function getFuelUnit(fuelType) {
+  const t = (fuelType || '').toLowerCase();
+  if (t === 'cng') return 'kg';
+  if (t === 'electric') return 'kWh';
+  return 'L';
+}
+
+function updateQuantityUnitUI() {
+  const fuelTypeSelect = document.getElementById('fuelModalFuelTypeSelect');
+  const fuelQuantityLabel = document.getElementById('fuelQuantityLabel');
+  const fuelQuantityInput = document.getElementById('fuelQuantityInput');
+  if (!fuelTypeSelect) return;
+
+  const fType = (fuelTypeSelect.value || 'Diesel').toLowerCase();
+  if (fType === 'cng') {
+    if (fuelQuantityLabel) fuelQuantityLabel.textContent = 'Gas Quantity (kg)';
+    if (fuelQuantityInput) fuelQuantityInput.placeholder = 'e.g. 45.00';
+  } else if (fType === 'electric') {
+    if (fuelQuantityLabel) fuelQuantityLabel.textContent = 'Energy Consumed (kWh / Units)';
+    if (fuelQuantityInput) fuelQuantityInput.placeholder = 'e.g. 60.00';
+  } else {
+    if (fuelQuantityLabel) fuelQuantityLabel.textContent = 'Fuel Quantity (Liters)';
+    if (fuelQuantityInput) fuelQuantityInput.placeholder = 'e.g. 120.00';
+  }
+}
+
 async function loadData() {
   state.kpis = await fetchKPIs();
   state.vehicles = await fetchVehicles();
@@ -96,10 +122,31 @@ async function loadData() {
 
   // Sync fuel modal vehicle select dropdown
   const vehicleSelect = document.getElementById('fuelModalVehicleSelect');
+  const fuelTypeSelect = document.getElementById('fuelModalFuelTypeSelect');
+
+  function updateAutoFuelType() {
+    if (!vehicleSelect || !fuelTypeSelect) return;
+    const selectedNo = vehicleSelect.value;
+    const matchingV = state.vehicles.find(v => v.vehicleNo === selectedNo || v.id === selectedNo);
+    if (matchingV && matchingV.fuelType) {
+      fuelTypeSelect.value = matchingV.fuelType;
+    }
+    updateQuantityUnitUI();
+  }
+
   if (vehicleSelect) {
     vehicleSelect.innerHTML = state.vehicles.map(v =>
       `<option value="${v.vehicleNo}">${v.vehicleNo} (${v.type})</option>`
     ).join('');
+
+    vehicleSelect.removeEventListener('change', updateAutoFuelType);
+    vehicleSelect.addEventListener('change', updateAutoFuelType);
+    updateAutoFuelType();
+  }
+
+  if (fuelTypeSelect) {
+    fuelTypeSelect.removeEventListener('change', updateQuantityUnitUI);
+    fuelTypeSelect.addEventListener('change', updateQuantityUnitUI);
   }
 }
 
@@ -378,12 +425,14 @@ function renderFuelRecordsTable() {
     return;
   }
 
-  tbody.innerHTML = filtered.slice(0, 5).map(f => `
+  tbody.innerHTML = filtered.slice(0, 5).map(f => {
+    const unit = getFuelUnit(f.fuelType);
+    return `
     <tr>
       <td>${f.date}</td>
       <td><strong>${f.vehicleNo}</strong></td>
       <td>${f.fuelType}</td>
-      <td>${f.liters.toFixed(2)}</td>
+      <td>${f.liters.toFixed(2)} ${unit}</td>
       <td>₹${f.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
       <td style="text-align: right;">
         <div class="action-btns" style="justify-content: flex-end;">
@@ -396,7 +445,8 @@ function renderFuelRecordsTable() {
         </div>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function renderIssuesTable() {
@@ -678,12 +728,15 @@ function updateChartLegends(chartData) {
   const legendFuel = document.getElementById('legendFuelType');
   if (legendFuel && chartData.fuelTypeDistribution) {
     const d = chartData.fuelTypeDistribution;
-    legendFuel.innerHTML = d.labels.map((lbl, i) => `
-      <div class="legend-item">
-        <span class="legend-color-dot" style="background:${d.colors[i]};"></span>
-        ${lbl} ${d.values[i].toLocaleString()} L (${d.percentages[i]}%)
-      </div>
-    `).join('');
+    legendFuel.innerHTML = d.labels.map((lbl, i) => {
+      const unit = getFuelUnit(lbl);
+      return `
+        <div class="legend-item">
+          <span class="legend-color-dot" style="background:${d.colors[i]};"></span>
+          ${lbl} ${d.values[i].toLocaleString()} ${unit} (${d.percentages[i]}%)
+        </div>
+      `;
+    }).join('');
   }
 }
 
