@@ -13,10 +13,35 @@ import {
   CHART_DATA
 } from './mockData.js';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const STORAGE_KEY = 'wastraq_fleet_state_v1';
 
-// In-memory data store initialized with mock data
-let localState = {
+function loadStoredState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.fuelRecords) && Array.isArray(parsed.vehicles)) {
+        INITIAL_VEHICLES.forEach(initV => {
+          if (!parsed.vehicles.some(v => v.id === initV.id || v.vehicleNo === initV.vehicleNo)) {
+            parsed.vehicles.push(initV);
+          }
+        });
+        INITIAL_FUEL_RECORDS.forEach(initF => {
+          if (!parsed.fuelRecords.some(f => f.id === initF.id)) {
+            parsed.fuelRecords.push(initF);
+          }
+        });
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error('Error loading stored state:', err);
+  }
+  return null;
+}
+
+// Data store initialized with localStorage fallback to mock data
+let localState = loadStoredState() || {
   kpis: { ...INITIAL_KPIS },
   vehicles: [...INITIAL_VEHICLES],
   fuelRecords: [...INITIAL_FUEL_RECORDS],
@@ -24,6 +49,14 @@ let localState = {
   auditRecords: [...INITIAL_AUDIT_RECORDS],
   chartData: { ...CHART_DATA }
 };
+
+export function saveLocalState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(localState));
+  } catch (err) {
+    console.error('Error saving state:', err);
+  }
+}
 
 export async function fetchKPIs() {
   try {
@@ -133,6 +166,26 @@ export async function addVehicle(vehicleData) {
   return newV;
 }
 
+export async function fetchFuelRecords() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/fuel`, { signal: AbortSignal.timeout(1500) });
+    if (res.ok) {
+      const dbRecords = await res.json();
+      if (Array.isArray(dbRecords) && dbRecords.length > 0) {
+        dbRecords.forEach(dbR => {
+          if (!localState.fuelRecords.some(r => r.id === dbR.id)) {
+            localState.fuelRecords.unshift(dbR);
+          }
+        });
+        recalculateChartData();
+      }
+    }
+  } catch (err) {
+    console.log('Using local store for Fuel Records');
+  }
+  return localState.fuelRecords;
+}
+
 export async function addFuelRecord(record) {
   const newRecord = {
     id: `FR-2025-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -142,6 +195,27 @@ export async function addFuelRecord(record) {
     liters: Number(record.liters),
     amount: Number(record.amount)
   };
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/fuel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: newRecord.id,
+        date: newRecord.date,
+        vehicleNo: newRecord.vehicleNo,
+        fuelType: newRecord.fuelType,
+        liters: newRecord.liters,
+        amount: newRecord.amount
+      })
+    });
+    if (res.ok) {
+      const savedObj = await res.json();
+      if (savedObj && savedObj.id) newRecord.id = savedObj.id;
+    }
+  } catch (err) {
+    console.log('DB save fallback to local storage:', err);
+  }
 
   localState.fuelRecords.unshift(newRecord);
   localState.kpis.fuelConsumedLiters += newRecord.liters;
@@ -209,11 +283,17 @@ export async function updateVehicleStatus(id, newStatus) {
       entityId: v.vehicleNo || v.id,
       details: `Updated status from ${oldStatus} to ${newStatus}`
     });
+    saveLocalState();
   }
   return v;
 }
 
 export async function deleteFuelRecord(id) {
+  try {
+    await fetch(`${API_BASE_URL}/fuel/${id}`, { method: 'DELETE' });
+  } catch (err) {
+    console.log('DB delete fallback to local storage:', err);
+  }
   localState.fuelRecords = localState.fuelRecords.filter(f => f.id !== id);
   recalculateChartData();
   return true;
@@ -248,6 +328,7 @@ export async function updateIssueStatus(issueId, newStatus) {
       entityId: issue.issueId,
       details: `Updated status for ${issue.issueId} (${issue.vehicleNo}) from ${oldStatus} to ${newStatus}`
     });
+    saveLocalState();
   }
   return issue;
 }
@@ -339,6 +420,8 @@ export function recalculateChartData() {
 
   // Update total KPIs
   localState.kpis.fuelConsumedLiters = Math.round(sumTypeLiters);
+
+  saveLocalState();
 }
 
 export function getLocalState() {

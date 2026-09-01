@@ -12,6 +12,7 @@ from app.routers import (
     trip_router,
     maintenance_router,
     analytics_router,
+    fuel_router,
 )
 
 @asynccontextmanager
@@ -46,6 +47,7 @@ app.include_router(vehicle_router.router, prefix=settings.API_V1_STR)
 app.include_router(trip_router.router, prefix=settings.API_V1_STR)
 app.include_router(maintenance_router.router, prefix=settings.API_V1_STR)
 app.include_router(analytics_router.router, prefix=settings.API_V1_STR)
+app.include_router(fuel_router.router, prefix=settings.API_V1_STR)
 
 @app.get("/", tags=["Health"])
 def root():
