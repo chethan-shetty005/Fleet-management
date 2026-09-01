@@ -8,9 +8,33 @@ export function initModals({ onAddVehicle, onAddFuelRecord }) {
   const detailModal = document.getElementById('detailModal');
   const datePickerModal = document.getElementById('datePickerModal');
 
+  // Custom Vehicle Type toggle logic
+  const typeSelect = document.getElementById('addVehicleTypeSelect');
+  const customTypeGroup = document.getElementById('customVehicleTypeGroup');
+  const customTypeInput = document.getElementById('customVehicleTypeInput');
+
+  function toggleCustomTypeInput() {
+    if (typeSelect?.value === 'Other') {
+      if (customTypeGroup) customTypeGroup.style.display = 'flex';
+      if (customTypeInput) {
+        customTypeInput.required = true;
+        customTypeInput.focus();
+      }
+    } else {
+      if (customTypeGroup) customTypeGroup.style.display = 'none';
+      if (customTypeInput) {
+        customTypeInput.required = false;
+        customTypeInput.value = '';
+      }
+    }
+  }
+
+  typeSelect?.addEventListener('change', toggleCustomTypeInput);
+
   // Trigger buttons
   document.getElementById('openAddVehicleBtn')?.addEventListener('click', () => {
     addVehicleModal?.classList.add('active');
+    toggleCustomTypeInput();
   });
 
   document.getElementById('openAddFuelBtn')?.addEventListener('click', () => {
@@ -35,9 +59,15 @@ export function initModals({ onAddVehicle, onAddFuelRecord }) {
   document.getElementById('addVehicleForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    let vehicleType = formData.get('type');
+    if (vehicleType === 'Other') {
+      const customType = formData.get('customType')?.trim();
+      vehicleType = customType || 'Custom';
+    }
+
     const vehicleData = {
       vehicleNo: formData.get('vehicleNo'),
-      type: formData.get('type'),
+      type: vehicleType,
       fuelType: formData.get('fuelType'),
       status: formData.get('status'),
       driver: formData.get('driver'),
@@ -46,6 +76,7 @@ export function initModals({ onAddVehicle, onAddFuelRecord }) {
     await onAddVehicle(vehicleData);
     addVehicleModal?.classList.remove('active');
     e.target.reset();
+    toggleCustomTypeInput();
   });
 
   // Form submission: Add Fuel Record

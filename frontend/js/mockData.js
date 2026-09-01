@@ -23,10 +23,16 @@ export const INITIAL_VEHICLES = [
   { id: "KA01GH3456", vehicleNo: "KA01GH3456", type: "Compactor", status: "Active", lastService: "10 Aug 2025", driver: "Anand Verma", fuelType: "CNG", mileage: 29400 },
   { id: "KA01IJ7890", vehicleNo: "KA01IJ7890", type: "Loader", status: "Active", lastService: "05 Aug 2025", driver: "Vijay Gowda", fuelType: "Diesel", mileage: 18750 },
   { id: "KA01KL2345", vehicleNo: "KA01KL2345", type: "Compactor", status: "Maintenance", lastService: "23 Aug 2025", driver: "Praveen R", fuelType: "Diesel", mileage: 64100 },
-  { id: "KA01MN5678", vehicleNo: "KA01MN5678", type: "Tipper", status: "Active", lastService: "22 Aug 2025", driver: "Kiran Naik", fuelType: "Diesel", mileage: 31050 }
+  { id: "KA01MN5678", vehicleNo: "KA01MN5678", type: "Tipper", status: "Active", lastService: "22 Aug 2025", driver: "Kiran Naik", fuelType: "Diesel", mileage: 31050 },
+  { id: "KA01EV1111", vehicleNo: "KA01EV1111", type: "Electric Van", status: "Active", lastService: "20 Aug 2025", driver: "Sunil Dutt", fuelType: "Electric", mileage: 12400 },
+  { id: "KA01PT2222", vehicleNo: "KA01PT2222", type: "Patrol Car", status: "Active", lastService: "18 Aug 2025", driver: "Rajesh Rao", fuelType: "Petrol", mileage: 21500 },
+  { id: "KA01HB3333", vehicleNo: "KA01HB3333", type: "Hybrid Truck", status: "Active", lastService: "24 Aug 2025", driver: "Deepak S", fuelType: "Hybrid", mileage: 15300 }
 ];
 
 export const INITIAL_FUEL_RECORDS = [
+  { id: "FR-2025-0845", date: "27 Aug 2025", vehicleNo: "KA01EV1111", fuelType: "Electric", liters: 95.00, amount: 2850.00 },
+  { id: "FR-2025-0844", date: "27 Aug 2025", vehicleNo: "KA01PT2222", fuelType: "Petrol", liters: 85.00, amount: 8925.00 },
+  { id: "FR-2025-0843", date: "26 Aug 2025", vehicleNo: "KA01HB3333", fuelType: "Hybrid", liters: 65.00, amount: 4875.00 },
   { id: "FR-2025-0842", date: "27 Aug 2025", vehicleNo: "KA01AB1234", fuelType: "Diesel", liters: 120.00, amount: 7200.00 },
   { id: "FR-2025-0841", date: "27 Aug 2025", vehicleNo: "KA01CD5678", fuelType: "Diesel", liters: 150.00, amount: 9000.00 },
   { id: "FR-2025-0840", date: "26 Aug 2025", vehicleNo: "KA01EF9012", fuelType: "Diesel", liters: 80.00, amount: 4800.00 },

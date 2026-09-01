@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WASTRAQ | Fleet & Fuel Management Dashboard</title>
   <meta name="description" content="Comprehensive Fleet & Fuel Operations Management Platform for Municipalities & Enterprise Operations.">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=1001">
 </head>
 <body>
   <div class="app-container">
@@ -271,11 +271,17 @@
           <div class="card" id="cardAnalysisOverview">
             <div class="card-header">
               <h2 class="card-title">Analysis Overview</h2>
-              <a href="#" class="view-all-link" data-tab="analysis">View all</a>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="chart-toggle-group">
+                  <button type="button" class="btn-toggle active" id="toggleConsumptionBtn">Consumption (L)</button>
+                  <button type="button" class="btn-toggle" id="toggleCostBtn">Cost (₹)</button>
+                </div>
+                <a href="#" class="view-all-link" data-tab="analysis">View all</a>
+              </div>
             </div>
             <div class="chart-split-container">
               <div class="chart-block">
-                <span class="chart-subtitle">Fuel Consumption Trend (L)</span>
+                <span class="chart-subtitle" id="trendChartTitle">Fuel Consumption Trend (L)</span>
                 <div class="canvas-wrapper">
                   <canvas id="trendChartCanvas"></canvas>
                 </div>
@@ -379,7 +385,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Vehicle Type</label>
-            <select name="type" class="form-select" required>
+            <select name="type" id="addVehicleTypeSelect" class="form-select" required>
               <option value="Compactor">Compactor</option>
               <option value="Tipper">Tipper</option>
               <option value="Tractor">Tractor</option>
@@ -387,7 +393,12 @@
               <option value="Truck">Truck</option>
               <option value="Earth Mover">Earth Mover</option>
               <option value="Electric Van">Electric Van</option>
+              <option value="Other">Other (Custom Type...)</option>
             </select>
+          </div>
+          <div class="form-group" id="customVehicleTypeGroup" style="display: none;">
+            <label class="form-label">Custom Vehicle Type Name</label>
+            <input type="text" id="customVehicleTypeInput" name="customType" class="form-input" placeholder="e.g. Sweeper, Water Tanker, Ambulance" maxlength="50">
           </div>
           <div class="form-group">
             <label class="form-label">Fuel Type</label>
@@ -524,6 +535,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=1003"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
  * Renders high-DPI crisp Line, Bar, and Donut charts.
  */
 
-export function renderLineChart(canvasId, data) {
+export function renderLineChart(canvasId, data, options = {}) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -18,24 +18,74 @@ export function renderLineChart(canvasId, data) {
   canvas.height = height * dpr;
   ctx.scale(dpr, dpr);
 
-  const padding = { top: 30, right: 30, bottom: 40, left: 50 };
+  const isCurrency = options.isCurrency || false;
+  const unitSuffix = options.unitSuffix || '';
+  const padding = { top: 32, right: 35, bottom: 38, left: isCurrency ? 60 : 50 };
 
   ctx.clearRect(0, 0, width, height);
 
-  const labels = data.labels;
-  const values = data.values;
-  const minVal = 0;
-  const maxVal = 15000;
+  const labels = data.labels || [];
+  const values = data.values || [];
+  if (labels.length === 0 || values.length === 0) return;
 
-  // Grid lines & Y Axis Labels
+  // Fully dynamic min and max calculation based on actual entry data
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+
+  let minVal, maxVal;
+  if (dataMin === dataMax) {
+    minVal = Math.max(0, Math.floor(dataMin * 0.7));
+    maxVal = Math.ceil(dataMax * 1.3) || 10;
+  } else {
+    const range = dataMax - dataMin;
+    const rawMin = Math.max(0, dataMin - range * 0.2);
+    const rawMax = dataMax + range * 0.2;
+
+    const span = rawMax - rawMin;
+    let step = 10;
+    if (span <= 10) step = 2;
+    else if (span <= 50) step = 10;
+    else if (span <= 200) step = 20;
+    else if (span <= 1000) step = 100;
+    else if (span <= 5000) step = 500;
+    else if (span <= 20000) step = 2000;
+    else if (span <= 100000) step = 10000;
+    else step = Math.pow(10, Math.floor(Math.log10(span))) / 2;
+
+    minVal = Math.max(0, Math.floor(rawMin / step) * step);
+    maxVal = Math.ceil(rawMax / step) * step;
+    if (maxVal === minVal) maxVal = minVal + step;
+  }
+
+  const unitPrefix = isCurrency ? '₹' : '';
+
+  const formatAxisLabel = (v) => {
+    if (v === 0) return `${unitPrefix}0`;
+    if (v >= 1000000) return `${unitPrefix}${(v / 1000000).toFixed(1)}M`;
+    if (v >= 1000) return `${unitPrefix}${(v / 1000).toFixed(1)}K`;
+    return `${unitPrefix}${v}`;
+  };
+
+  const formatPointLabel = (v) => {
+    if (v >= 1000000) return `${unitPrefix}${(v / 1000000).toFixed(1)}M${unitSuffix}`;
+    if (v >= 1000) return `${unitPrefix}${(v / 1000).toFixed(1)}K${unitSuffix}`;
+    return `${unitPrefix}${v}${unitSuffix}`;
+  };
+
+  // Grid lines & Y Axis Labels (4 ticks)
   ctx.strokeStyle = '#E8ECEF';
   ctx.lineWidth = 1;
   ctx.fillStyle = '#9A9FA5';
-  ctx.font = '600 11px "Plus Jakarta Sans"';
+  ctx.font = '600 11px "Plus Jakarta Sans", sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
 
-  const ySteps = [0, 5000, 10000, 15000];
+  const ySteps = [
+    minVal,
+    Math.round(minVal + (maxVal - minVal) * 0.3333),
+    Math.round(minVal + (maxVal - minVal) * 0.6666),
+    maxVal
+  ];
   ySteps.forEach(yVal => {
     const yRatio = (yVal - minVal) / (maxVal - minVal);
     const yPos = height - padding.bottom - yRatio * (height - padding.top - padding.bottom);
@@ -45,15 +95,14 @@ export function renderLineChart(canvasId, data) {
     ctx.lineTo(width - padding.right, yPos);
     ctx.stroke();
 
-    const labelText = yVal === 0 ? '0' : `${yVal / 1000}K`;
-    ctx.fillText(labelText, padding.left - 10, yPos);
+    ctx.fillText(formatAxisLabel(Math.round(yVal)), padding.left - 10, yPos);
   });
 
   // Calculate points
   const points = values.map((val, idx) => {
-    const xRatio = idx / (values.length - 1);
+    const xRatio = values.length > 1 ? idx / (values.length - 1) : 0.5;
     const xPos = padding.left + xRatio * (width - padding.left - padding.right);
-    const yRatio = (val - minVal) / (maxVal - minVal);
+    const yRatio = Math.min(1, Math.max(0, (val - minVal) / (maxVal - minVal)));
     const yPos = height - padding.bottom - yRatio * (height - padding.top - padding.bottom);
     return { x: xPos, y: yPos, label: labels[idx], value: val };
   });
@@ -63,9 +112,31 @@ export function renderLineChart(canvasId, data) {
   ctx.textBaseline = 'top';
   points.forEach(pt => {
     ctx.fillStyle = '#6F767E';
-    ctx.font = '600 11px "Plus Jakarta Sans"';
+    ctx.font = '600 11px "Plus Jakarta Sans", sans-serif';
     ctx.fillText(pt.label, pt.x, height - padding.bottom + 10);
   });
+
+  if (points.length === 0) return;
+
+  // Draw Gradient Fill under curve
+  const fillGrad = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
+  fillGrad.addColorStop(0, 'rgba(59, 130, 246, 0.22)');
+  fillGrad.addColorStop(1, 'rgba(59, 130, 246, 0.00)');
+
+  ctx.beginPath();
+  points.forEach((pt, i) => {
+    if (i === 0) ctx.moveTo(pt.x, pt.y);
+    else {
+      const prev = points[i - 1];
+      const cx = (prev.x + pt.x) / 2;
+      ctx.bezierCurveTo(cx, prev.y, cx, pt.y, pt.x, pt.y);
+    }
+  });
+  ctx.lineTo(points[points.length - 1].x, height - padding.bottom);
+  ctx.lineTo(points[0].x, height - padding.bottom);
+  ctx.closePath();
+  ctx.fillStyle = fillGrad;
+  ctx.fill();
 
   // Draw Smooth Line
   ctx.beginPath();
@@ -84,7 +155,7 @@ export function renderLineChart(canvasId, data) {
   });
   ctx.stroke();
 
-  // Draw Dots
+  // Draw Dots & Value Callouts
   points.forEach(pt => {
     ctx.beginPath();
     ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
@@ -93,6 +164,12 @@ export function renderLineChart(canvasId, data) {
     ctx.strokeStyle = '#3B82F6';
     ctx.lineWidth = 3;
     ctx.stroke();
+
+    ctx.fillStyle = '#1A1D1F';
+    ctx.font = '700 10px "Plus Jakarta Sans", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(formatPointLabel(pt.value), pt.x, pt.y - 7);
   });
 }
 

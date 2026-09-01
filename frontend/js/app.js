@@ -3,9 +3,9 @@
  * Integrates API Service, Custom Chart Canvas Renderer, and Interactive Modals.
  */
 
-import { fetchKPIs, fetchVehicles, addVehicle, addFuelRecord, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js';
-import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js';
-import { initModals, openDetailModal } from './modals.js';
+import { fetchKPIs, fetchVehicles, addVehicle, addFuelRecord, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js?v=1003';
+import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js?v=1003';
+import { initModals, openDetailModal } from './modals.js?v=1003';
 
 let state = {
   kpis: {},
@@ -50,6 +50,40 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupChartResizeObserver();
 });
 
+function updateVehicleTypeSelects() {
+  const filterTypeSelect = document.getElementById('filterType');
+  const addVehicleTypeSelect = document.getElementById('addVehicleTypeSelect');
+
+  const defaultTypes = ["Compactor", "Tipper", "Tractor", "Loader", "Truck", "Earth Mover", "Electric Van"];
+  const customTypes = [];
+
+  state.vehicles.forEach(v => {
+    if (v.type && !defaultTypes.includes(v.type) && !customTypes.includes(v.type) && v.type !== 'Other') {
+      customTypes.push(v.type);
+    }
+  });
+
+  if (filterTypeSelect) {
+    const selectedFilter = state.filters.type;
+    filterTypeSelect.innerHTML = `
+      <option value="All">All Types</option>
+      ${defaultTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
+      ${customTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
+    `;
+    filterTypeSelect.value = selectedFilter;
+  }
+
+  if (addVehicleTypeSelect) {
+    const currentAddTypeVal = addVehicleTypeSelect.value;
+    addVehicleTypeSelect.innerHTML = `
+      ${defaultTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
+      ${customTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
+      <option value="Other">Other (Custom Type...)</option>
+    `;
+    addVehicleTypeSelect.value = currentAddTypeVal || 'Compactor';
+  }
+}
+
 async function loadData() {
   state.kpis = await fetchKPIs();
   state.vehicles = await fetchVehicles();
@@ -57,6 +91,8 @@ async function loadData() {
   state.fuelRecords = local.fuelRecords;
   state.issues = local.vehicleIssues;
   state.audits = local.auditRecords;
+
+  updateVehicleTypeSelects();
 
   // Sync fuel modal vehicle select dropdown
   const vehicleSelect = document.getElementById('fuelModalVehicleSelect');
@@ -68,6 +104,7 @@ async function loadData() {
 }
 
 function renderAll() {
+  updateVehicleTypeSelects();
   renderKPIs();
   renderVehiclesTable();
   renderFuelRecordsTable();
@@ -509,6 +546,7 @@ function renderCharts() {
   const filteredFuelRecords = filterList(state.fuelRecords, ['vehicleNo', 'fuelType', 'date'], 'date');
 
   // Compute fuel by vehicle type from filtered fuel records
+  const baseDefaults = ["Compactor", "Tipper", "Tractor", "Loader"];
   const typeTotals = { Compactor: 0, Tipper: 0, Tractor: 0, Loader: 0 };
   filteredFuelRecords.forEach(rec => {
     const v = filteredVehicles.find(item => item.vehicleNo === rec.vehicleNo || item.id === rec.vehicleNo);
@@ -516,54 +554,111 @@ function renderCharts() {
     if (typeTotals[vType] !== undefined) typeTotals[vType] += rec.liters;
     else typeTotals[vType] = rec.liters;
   });
-  const sumTypeLiters = Object.values(typeTotals).reduce((a, b) => a + b, 0) || 1;
+  const chartKeys = Object.keys(typeTotals).filter(k => typeTotals[k] > 0 || baseDefaults.includes(k));
+  const palette = ["#3B82F6", "#A855F7", "#EAB308", "#22C55E", "#EC4899", "#F97316", "#06B6D4", "#8B5CF6", "#64748B"];
+  const sumTypeLiters = chartKeys.reduce((acc, k) => acc + (typeTotals[k] || 0), 0) || 1;
   const fuelByVehicleType = {
-    labels: ["Compactor", "Tipper", "Tractor", "Loader"],
-    values: ["Compactor", "Tipper", "Tractor", "Loader"].map(t => Math.round(typeTotals[t] || 0)),
-    percentages: ["Compactor", "Tipper", "Tractor", "Loader"].map(t => Number(((typeTotals[t] / sumTypeLiters) * 100).toFixed(1))),
-    colors: ["#3B82F6", "#A855F7", "#EAB308", "#22C55E"]
+    labels: chartKeys,
+    values: chartKeys.map(t => Math.round(typeTotals[t] || 0)),
+    percentages: chartKeys.map(t => Number((((typeTotals[t] || 0) / sumTypeLiters) * 100).toFixed(1))),
+    colors: chartKeys.map((_, i) => palette[i % palette.length])
   };
 
-  // Compute fuel type distribution from filtered fuel records
-  const fuelTypeTotals = { Diesel: 0, CNG: 0 };
+  // Compute fuel type distribution dynamically from filtered fuel records
+  const defaultFuelTypes = ["Diesel", "CNG", "Electric", "Petrol", "Hybrid"];
+  const fuelTypeTotals = {};
+  defaultFuelTypes.forEach(ft => fuelTypeTotals[ft] = 0);
+
   filteredFuelRecords.forEach(rec => {
     const fType = rec.fuelType || 'Diesel';
-    if (fuelTypeTotals[fType] !== undefined) fuelTypeTotals[fType] += rec.liters;
+    if (fuelTypeTotals[fType] !== undefined) fuelTypeTotals[fType] += (rec.liters || 0);
+    else fuelTypeTotals[fType] = (rec.liters || 0);
   });
-  const sumFuelType = (fuelTypeTotals.Diesel + fuelTypeTotals.CNG) || 1;
-  const fuelTypeDistribution = {
-    labels: ["Diesel", "CNG"],
-    values: [Math.round(fuelTypeTotals.Diesel), Math.round(fuelTypeTotals.CNG)],
-    percentages: [
-      Number(((fuelTypeTotals.Diesel / sumFuelType) * 100).toFixed(1)),
-      Number(((fuelTypeTotals.CNG / sumFuelType) * 100).toFixed(1))
-    ],
-    colors: ["#2563EB", "#10B981"]
+
+  const activeFuelKeys = Object.keys(fuelTypeTotals).filter(k => fuelTypeTotals[k] > 0 || ["Diesel", "CNG"].includes(k));
+  const sumFuelTypeLiters = activeFuelKeys.reduce((acc, k) => acc + (fuelTypeTotals[k] || 0), 0) || 1;
+
+  const fuelPalette = {
+    "Diesel": "#2563EB",
+    "CNG": "#10B981",
+    "Electric": "#F59E0B",
+    "Petrol": "#EF4444",
+    "Hybrid": "#8B5CF6"
   };
 
-  // Compute fuel trend (group fuel records by date)
+  const fuelTypeDistribution = {
+    labels: activeFuelKeys,
+    values: activeFuelKeys.map(k => Math.round(fuelTypeTotals[k] || 0)),
+    percentages: activeFuelKeys.map(k => Number((((fuelTypeTotals[k] || 0) / sumFuelTypeLiters) * 100).toFixed(1))),
+    colors: activeFuelKeys.map((k, i) => fuelPalette[k] || palette[i % palette.length])
+  };
+
+  const fuelTypeCenterText = Math.round(sumFuelTypeLiters) > 0 ? `${Math.round(sumFuelTypeLiters).toLocaleString()} L` : '0 L';
+
+  // Compute fuel trend dynamically from actual logged fuel records
   const dateMap = {};
-  filteredFuelRecords.forEach(r => {
-    dateMap[r.date] = (dateMap[r.date] || 0) + r.liters;
-  });
-  const trendLabels = Object.keys(dateMap).length > 0 ? Object.keys(dateMap).slice(-7) : local.chartData.fuelTrend.labels;
-  const trendValues = Object.keys(dateMap).length > 0 ? trendLabels.map(l => Math.round(dateMap[l] || 0)) : local.chartData.fuelTrend.values;
-  const fuelTrend = { labels: trendLabels, values: trendValues };
+
+  if (filteredFuelRecords && filteredFuelRecords.length > 0) {
+    filteredFuelRecords.forEach(r => {
+      if (!r.date) return;
+      const dObj = parseDate(r.date);
+      if (!dObj) return;
+
+      const label = dObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+      if (!dateMap[label]) {
+        dateMap[label] = { liters: 0, amount: 0, dateObj: dObj };
+      }
+      dateMap[label].liters += (r.liters || 0);
+      dateMap[label].amount += (r.amount || ((r.liters || 0) * 70));
+    });
+  }
+
+  let sortedEntries = Object.entries(dateMap)
+    .map(([label, item]) => ({ label, ...item }))
+    .sort((a, b) => (a.dateObj ? a.dateObj.getTime() : 0) - (b.dateObj ? b.dateObj.getTime() : 0));
+
+  // If no fuel records logged, provide initial demonstration trend
+  if (sortedEntries.length === 0) {
+    const defaultBaseline = [
+      { date: "21 Aug 2025", label: "21 Aug", liters: 7200, amount: 504000 },
+      { date: "22 Aug 2025", label: "22 Aug", liters: 6800, amount: 476000 },
+      { date: "23 Aug 2025", label: "23 Aug", liters: 8100, amount: 567000 },
+      { date: "24 Aug 2025", label: "24 Aug", liters: 8400, amount: 588000 },
+      { date: "25 Aug 2025", label: "25 Aug", liters: 8300, amount: 581000 },
+      { date: "26 Aug 2025", label: "26 Aug", liters: 9800, amount: 686000 },
+      { date: "27 Aug 2025", label: "27 Aug", liters: 9100, amount: 637000 }
+    ];
+    sortedEntries = defaultBaseline.map(b => ({ ...b, dateObj: parseDate(b.date) }));
+  }
+
+  const recentEntries = sortedEntries.slice(-7);
+  const trendLabels = recentEntries.map(e => e.label);
+  const trendLiters = recentEntries.map(e => Math.round(e.liters));
+  const trendAmounts = recentEntries.map(e => Math.round(e.amount));
 
   const chartData = {
-    fuelTrend: fuelTrend,
     fuelByVehicleType: fuelByVehicleType,
     fleetEfficiency: local.chartData.fleetEfficiency,
     fuelTypeDistribution: fuelTypeDistribution
   };
 
-  const totalFuelL = Math.round(filteredFuelRecords.reduce((acc, r) => acc + (r.liters || 0), 0));
-  const centerText = totalFuelL > 0 ? `${totalFuelL.toLocaleString()} L` : '0 L';
+  const vehicleTypeCenterText = Math.round(sumTypeLiters) > 0 ? `${Math.round(sumTypeLiters).toLocaleString()} L` : '0 L';
 
-  renderLineChart('trendChartCanvas', chartData.fuelTrend);
-  renderDonutChart('donutVehicleTypeCanvas', chartData.fuelByVehicleType, centerText);
+  const mode = state.trendMode || 'consumption';
+  const trendTitleEl = document.getElementById('trendChartTitle');
+  if (trendTitleEl) {
+    trendTitleEl.textContent = mode === 'cost' ? 'Fuel Cost Trend (₹)' : 'Fuel Consumption Trend (L)';
+  }
+
+  if (mode === 'cost') {
+    renderLineChart('trendChartCanvas', { labels: trendLabels, values: trendAmounts }, { isCurrency: true });
+  } else {
+    renderLineChart('trendChartCanvas', { labels: trendLabels, values: trendLiters }, { isCurrency: false, unitSuffix: ' L' });
+  }
+
+  renderDonutChart('donutVehicleTypeCanvas', chartData.fuelByVehicleType, vehicleTypeCenterText);
   renderBarChart('barWardCanvas', chartData.fleetEfficiency);
-  renderDonutChart('donutFuelTypeCanvas', chartData.fuelTypeDistribution, centerText);
+  renderDonutChart('donutFuelTypeCanvas', chartData.fuelTypeDistribution, fuelTypeCenterText);
 
   updateChartLegends(chartData);
 }
@@ -604,6 +699,20 @@ function setupChartResizeObserver() {
 
 /* Event Listeners */
 function setupEventListeners() {
+  document.getElementById('toggleConsumptionBtn')?.addEventListener('click', () => {
+    state.trendMode = 'consumption';
+    document.getElementById('toggleConsumptionBtn')?.classList.add('active');
+    document.getElementById('toggleCostBtn')?.classList.remove('active');
+    renderCharts();
+  });
+
+  document.getElementById('toggleCostBtn')?.addEventListener('click', () => {
+    state.trendMode = 'cost';
+    document.getElementById('toggleCostBtn')?.classList.add('active');
+    document.getElementById('toggleConsumptionBtn')?.classList.remove('active');
+    renderCharts();
+  });
+
   document.getElementById('filterType')?.addEventListener('change', (e) => {
     state.filters.type = e.target.value;
     renderAll();
