@@ -10,3 +10,9 @@ env/
 
 # Environment variables
 .env
+
+# Logs
+*.log
+backend.log
+frontend.log
+

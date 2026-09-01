@@ -16,3 +16,8 @@ INFO:     Started server process [8322]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     127.0.0.1:59166 - "GET /api/v1/fuel HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [8322]
+INFO:     Stopping reloader process [8137]
