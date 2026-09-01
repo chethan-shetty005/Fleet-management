@@ -3,9 +3,9 @@
  * Integrates API Service, Custom Chart Canvas Renderer, and Interactive Modals.
  */
 
-import { fetchKPIs, fetchVehicles, fetchFuelRecords, addVehicle, addFuelRecord, addVehicleIssue, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js?v=1010';
-import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js?v=1010';
-import { initModals, openDetailModal } from './modals.js?v=1010';
+import { fetchKPIs, fetchVehicles, fetchFuelRecords, addVehicle, addFuelRecord, addVehicleIssue, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js?v=10002';
+import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js?v=10002';
+import { initModals, openDetailModal } from './modals.js?v=10002';
 
 let state = {
   kpis: {},
@@ -214,20 +214,72 @@ function filterList(list, fields = [], dateField = null) {
   const end = endDate ? new Date(`${endDate}T23:59:59.999`) : null;
 
   return list.filter(item => {
-    if (type !== 'All' && item.type && item.type !== type) return false;
-    if (status !== 'All' && item.status && item.status !== status && !item.issueId) return false;
-    if (fuelType !== 'All' && item.fuelType && item.fuelType !== fuelType) return false;
-
-    if (severity && severity !== 'All' && item.severity && item.severity !== severity) return false;
-    if (issueStatus && issueStatus !== 'All' && item.issueId && item.status !== issueStatus) return false;
-    if (zone && zone !== 'All' && item.zone && item.zone !== zone) return false;
-
-    if (mileage && mileage !== 'All' && typeof item.mileage === 'number') {
-      if (mileage === 'low' && item.mileage >= 10000) return false;
-      if (mileage === 'mid' && (item.mileage < 10000 || item.mileage > 50000)) return false;
-      if (mileage === 'high' && item.mileage <= 50000) return false;
+    // Lookup parent vehicle if item is a child record (Fuel Record, Issue, or Audit Log)
+    let parentVehicle = null;
+    const vehNo = item.vehicleNo || (item.entity === 'Vehicle' ? item.entityId : null);
+    if (vehNo) {
+      parentVehicle = state.vehicles.find(v => v.vehicleNo === vehNo || v.id === vehNo);
+    } else if (!item.vehicleNo && item.type && item.status && item.fuelType) {
+      // Item is itself a vehicle object
+      parentVehicle = item;
     }
 
+    const resolvedType = item.type || (parentVehicle ? parentVehicle.type : null);
+    const resolvedFuelType = item.fuelType || (parentVehicle ? parentVehicle.fuelType : null);
+    const resolvedZone = item.zone || (parentVehicle ? parentVehicle.zone : null);
+    const resolvedMileage = typeof item.mileage === 'number' ? item.mileage : (parentVehicle ? parentVehicle.mileage : null);
+
+    // Resolved Status logic:
+    // If it's an issue record (has issueId), item.status is issue status (Open/In Progress/etc). parentVehicle.status is vehicle status.
+    let resolvedVehicleStatus = item.issueId ? (parentVehicle ? parentVehicle.status : null) : (item.status || (parentVehicle ? parentVehicle.status : null));
+
+    // 1. Vehicle Type Filter
+    if (type !== 'All') {
+      if (resolvedType && resolvedType !== type) return false;
+      if (!resolvedType && (item.vehicleNo || item.id)) return false;
+    }
+
+    // 2. Vehicle Status Filter
+    if (status !== 'All') {
+      if (resolvedVehicleStatus && resolvedVehicleStatus !== status) return false;
+      if (!resolvedVehicleStatus && item.vehicleNo) return false;
+    }
+
+    // 3. Fuel Type Filter
+    if (fuelType !== 'All') {
+      if (resolvedFuelType && resolvedFuelType !== fuelType) return false;
+      if (!resolvedFuelType && (item.vehicleNo || item.id)) return false;
+    }
+
+    // 4. Issue Severity Filter
+    if (severity && severity !== 'All') {
+      if (item.issueId) {
+        if (item.severity !== severity) return false;
+      }
+    }
+
+    // 5. Issue Status Filter
+    if (issueStatus && issueStatus !== 'All') {
+      if (item.issueId) {
+        if (item.status !== issueStatus) return false;
+      }
+    }
+
+    // 6. Zone / Depot Filter
+    if (zone && zone !== 'All') {
+      if (resolvedZone && resolvedZone !== zone) return false;
+    }
+
+    // 7. Mileage Range Filter
+    if (mileage && mileage !== 'All') {
+      if (typeof resolvedMileage === 'number') {
+        if (mileage === 'low' && resolvedMileage >= 10000) return false;
+        if (mileage === 'mid' && (resolvedMileage < 10000 || resolvedMileage > 50000)) return false;
+        if (mileage === 'high' && resolvedMileage <= 50000) return false;
+      }
+    }
+
+    // 8. Date Range Filter
     if (dateField && (start || end)) {
       const itemDateStr = item[dateField];
       if (itemDateStr) {
@@ -239,11 +291,21 @@ function filterList(list, fields = [], dateField = null) {
       }
     }
 
+    // 9. Search Query Filter
     if (search) {
-      const s = search.toLowerCase();
-      const match = fields.some(f => item[f] && String(item[f]).toLowerCase().includes(s));
+      const s = search.toLowerCase().trim();
+      let match = fields.some(f => item[f] && String(item[f]).toLowerCase().includes(s));
+
+      if (!match && parentVehicle) {
+        if (parentVehicle.vehicleNo && parentVehicle.vehicleNo.toLowerCase().includes(s)) match = true;
+        if (parentVehicle.type && parentVehicle.type.toLowerCase().includes(s)) match = true;
+        if (parentVehicle.driver && parentVehicle.driver.toLowerCase().includes(s)) match = true;
+        if (parentVehicle.fuelType && parentVehicle.fuelType.toLowerCase().includes(s)) match = true;
+      }
+
       if (!match) return false;
     }
+
     return true;
   });
 }
@@ -616,30 +678,33 @@ function renderAuditRecordsTable() {
 
 /* Render Charts */
 function renderCharts() {
-  const local = getLocalState();
   const filteredVehicles = filterList(state.vehicles, ['vehicleNo', 'type', 'driver'], 'lastService');
   const filteredFuelRecords = filterList(state.fuelRecords, ['vehicleNo', 'fuelType', 'date'], 'date');
 
-  // Compute fuel by vehicle type from filtered fuel records
+  // 1. Compute Fuel by Vehicle Type dynamically
   const baseDefaults = ["Compactor", "Tipper", "Tractor", "Loader"];
   const typeTotals = { Compactor: 0, Tipper: 0, Tractor: 0, Loader: 0 };
   filteredFuelRecords.forEach(rec => {
     const v = filteredVehicles.find(item => item.vehicleNo === rec.vehicleNo || item.id === rec.vehicleNo);
     const vType = v ? v.type : (rec.fuelType || 'Compactor');
-    if (typeTotals[vType] !== undefined) typeTotals[vType] += rec.liters;
-    else typeTotals[vType] = rec.liters;
+    if (typeTotals[vType] !== undefined) typeTotals[vType] += (rec.liters || 0);
+    else typeTotals[vType] = (rec.liters || 0);
   });
+
   const chartKeys = Object.keys(typeTotals).filter(k => typeTotals[k] > 0 || baseDefaults.includes(k));
   const palette = ["#3B82F6", "#A855F7", "#EAB308", "#22C55E", "#EC4899", "#F97316", "#06B6D4", "#8B5CF6", "#64748B"];
-  const sumTypeLiters = chartKeys.reduce((acc, k) => acc + (typeTotals[k] || 0), 0) || 1;
+  const sumTypeLiters = chartKeys.reduce((acc, k) => acc + (typeTotals[k] || 0), 0);
+
   const fuelByVehicleType = {
     labels: chartKeys,
     values: chartKeys.map(t => Math.round(typeTotals[t] || 0)),
-    percentages: chartKeys.map(t => Number((((typeTotals[t] || 0) / sumTypeLiters) * 100).toFixed(1))),
+    percentages: chartKeys.map(t => sumTypeLiters > 0 ? Number((((typeTotals[t] || 0) / sumTypeLiters) * 100).toFixed(1)) : 0),
     colors: chartKeys.map((_, i) => palette[i % palette.length])
   };
 
-  // Compute fuel type distribution dynamically from filtered fuel records
+  const vehicleTypeCenterText = sumTypeLiters > 0 ? `${Math.round(sumTypeLiters).toLocaleString()} L` : '0 L';
+
+  // 2. Compute Fuel Type Distribution dynamically
   const defaultFuelTypes = ["Diesel", "CNG", "Electric", "Petrol", "Hybrid"];
   const fuelTypeTotals = {};
   defaultFuelTypes.forEach(ft => fuelTypeTotals[ft] = 0);
@@ -651,7 +716,7 @@ function renderCharts() {
   });
 
   const activeFuelKeys = Object.keys(fuelTypeTotals).filter(k => fuelTypeTotals[k] > 0 || ["Diesel", "CNG"].includes(k));
-  const sumFuelTypeLiters = activeFuelKeys.reduce((acc, k) => acc + (fuelTypeTotals[k] || 0), 0) || 1;
+  const sumFuelTypeLiters = activeFuelKeys.reduce((acc, k) => acc + (fuelTypeTotals[k] || 0), 0);
 
   const fuelPalette = {
     "Diesel": "#2563EB",
@@ -664,13 +729,35 @@ function renderCharts() {
   const fuelTypeDistribution = {
     labels: activeFuelKeys,
     values: activeFuelKeys.map(k => Math.round(fuelTypeTotals[k] || 0)),
-    percentages: activeFuelKeys.map(k => Number((((fuelTypeTotals[k] || 0) / sumFuelTypeLiters) * 100).toFixed(1))),
+    percentages: activeFuelKeys.map(k => sumFuelTypeLiters > 0 ? Number((((fuelTypeTotals[k] || 0) / sumFuelTypeLiters) * 100).toFixed(1)) : 0),
     colors: activeFuelKeys.map((k, i) => fuelPalette[k] || palette[i % palette.length])
   };
 
-  const fuelTypeCenterText = Math.round(sumFuelTypeLiters) > 0 ? `${Math.round(sumFuelTypeLiters).toLocaleString()} L` : '0 L';
+  const fuelTypeCenterText = sumFuelTypeLiters > 0 ? `${Math.round(sumFuelTypeLiters).toLocaleString()} L` : '0 L';
 
-  // Compute fuel trend dynamically from actual logged fuel records
+  // 3. Compute Fleet Efficiency dynamically (km/L per vehicle type)
+  const effTypes = ["Compactor", "Tipper", "Tractor", "Loader", "Truck"];
+  const effValues = effTypes.map(t => {
+    const vOfType = filteredVehicles.filter(v => v.type === t);
+    const nos = vOfType.map(v => v.vehicleNo || v.id);
+    const fOfType = filteredFuelRecords.filter(f => nos.includes(f.vehicleNo));
+
+    const totalKm = vOfType.reduce((acc, v) => acc + (v.mileage || 0), 0);
+    const totalLiters = fOfType.reduce((acc, f) => acc + (f.liters || 0), 0);
+
+    if (totalKm > 0 && totalLiters > 0) {
+      return Number((totalKm / totalLiters).toFixed(1));
+    }
+    return 0;
+  });
+
+  const fleetEfficiency = {
+    labels: effTypes,
+    values: effValues,
+    color: "#22C55E"
+  };
+
+  // 4. Compute Fuel Trend dynamically from actual logged fuel records
   const dateMap = {};
 
   if (filteredFuelRecords && filteredFuelRecords.length > 0) {
@@ -692,18 +779,16 @@ function renderCharts() {
     .map(([label, item]) => ({ label, ...item }))
     .sort((a, b) => (a.dateObj ? a.dateObj.getTime() : 0) - (b.dateObj ? b.dateObj.getTime() : 0));
 
-  // If no fuel records logged, provide initial demonstration trend
+  // If no fuel records logged for active filters, generate zero-value date labels for the past 7 days
   if (sortedEntries.length === 0) {
-    const defaultBaseline = [
-      { date: "21 Aug 2025", label: "21 Aug", liters: 7200, amount: 504000 },
-      { date: "22 Aug 2025", label: "22 Aug", liters: 6800, amount: 476000 },
-      { date: "23 Aug 2025", label: "23 Aug", liters: 8100, amount: 567000 },
-      { date: "24 Aug 2025", label: "24 Aug", liters: 8400, amount: 588000 },
-      { date: "25 Aug 2025", label: "25 Aug", liters: 8300, amount: 581000 },
-      { date: "26 Aug 2025", label: "26 Aug", liters: 9800, amount: 686000 },
-      { date: "27 Aug 2025", label: "27 Aug", liters: 9100, amount: 637000 }
-    ];
-    sortedEntries = defaultBaseline.map(b => ({ ...b, dateObj: parseDate(b.date) }));
+    const today = new Date();
+    sortedEntries = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const label = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+      sortedEntries.push({ label, liters: 0, amount: 0, dateObj: d });
+    }
   }
 
   const recentEntries = sortedEntries.slice(-7);
@@ -713,11 +798,9 @@ function renderCharts() {
 
   const chartData = {
     fuelByVehicleType: fuelByVehicleType,
-    fleetEfficiency: local.chartData.fleetEfficiency,
+    fleetEfficiency: fleetEfficiency,
     fuelTypeDistribution: fuelTypeDistribution
   };
-
-  const vehicleTypeCenterText = Math.round(sumTypeLiters) > 0 ? `${Math.round(sumTypeLiters).toLocaleString()} L` : '0 L';
 
   const mode = state.trendMode || 'consumption';
   const trendTitleEl = document.getElementById('trendChartTitle');
@@ -1076,14 +1159,106 @@ export function exportFleetData() {
     const local = typeof getLocalState === 'function' ? getLocalState() : {};
     const vehicles = filterList(state.vehicles || local.vehicles || [], ['vehicleNo', 'type', 'driver'], 'lastService');
     const fuelRecords = filterList(state.fuelRecords || local.fuelRecords || [], ['vehicleNo', 'fuelType', 'date'], 'date');
+    const issues = filterList(state.issues || local.vehicleIssues || [], ['issueId', 'vehicleNo', 'issue', 'severity', 'status'], 'reportedOn');
     const auditRecords = filterList(state.audits || local.auditRecords || [], ['user', 'action', 'entity', 'entityId', 'details'], 'dateTime');
 
+    // Build filter summary line
+    const activeFilterSummaries = [];
+    if (state.filters.type !== 'All') activeFilterSummaries.push(`Vehicle Type: ${state.filters.type}`);
+    if (state.filters.status !== 'All') activeFilterSummaries.push(`Vehicle Status: ${state.filters.status}`);
+    if (state.filters.fuelType !== 'All') activeFilterSummaries.push(`Fuel Type: ${state.filters.fuelType}`);
+    if (state.filters.severity !== 'All') activeFilterSummaries.push(`Severity: ${state.filters.severity}`);
+    if (state.filters.issueStatus !== 'All') activeFilterSummaries.push(`Issue Status: ${state.filters.issueStatus}`);
+    if (state.filters.zone !== 'All') activeFilterSummaries.push(`Zone: ${state.filters.zone}`);
+    if (state.filters.mileage !== 'All') activeFilterSummaries.push(`Mileage: ${state.filters.mileage}`);
+    if (state.filters.startDate && state.filters.endDate) activeFilterSummaries.push(`Date Range: ${state.filters.startDate} to ${state.filters.endDate}`);
+    if (state.filters.search) activeFilterSummaries.push(`Search Query: "${state.filters.search}"`);
+
+    const filterString = activeFilterSummaries.length > 0 ? activeFilterSummaries.join(' | ') : 'All Filters Default (No Active Filter)';
+
     const rows = [
-      ["Category", "ID / Vehicle No", "Type / Date", "Status / Fuel Type", "Driver / Liters", "Amount / Mileage"],
-      ...vehicles.map(v => ["Vehicle", v.vehicleNo || v.id || 'N/A', v.type || 'N/A', v.status || 'Active', v.driver || 'N/A', `${v.mileage || 0} km`]),
-      ...fuelRecords.map(f => ["Fuel Record", f.id || 'N/A', f.date || 'N/A', f.fuelType || 'Diesel', `${f.liters || 0} L`, `Rs. ${f.amount || 0}`]),
-      ...auditRecords.map(a => ["Audit Log", a.id || 'N/A', a.dateTime || 'N/A', a.user || 'Admin', a.action || 'Log', a.details || 'N/A'])
+      ["=== WASTRAQ FLEET & FUEL MANAGEMENT FILTERED EXPORT ==="],
+      ["Export Date", new Date().toLocaleString()],
+      ["Applied Filters", filterString],
+      [],
+      ["--- VEHICLES (" + vehicles.length + " matching) ---"],
+      ["Vehicle Registration No", "Vehicle Type", "Status", "Fuel Type", "Assigned Driver", "Odometer Mileage", "Last Service Date"]
     ];
+
+    if (vehicles.length > 0) {
+      vehicles.forEach(v => {
+        rows.push([
+          v.vehicleNo || v.id || 'N/A',
+          v.type || 'N/A',
+          v.status || 'Active',
+          v.fuelType || 'Diesel',
+          v.driver || 'Unassigned',
+          v.mileage !== undefined ? `${v.mileage} km` : 'N/A',
+          v.lastService || 'N/A'
+        ]);
+      });
+    } else {
+      rows.push(["No vehicle records match the active filters."]);
+    }
+
+    rows.push([]);
+    rows.push(["--- FUEL RECORDS (" + fuelRecords.length + " matching) ---"]);
+    rows.push(["Log ID", "Date", "Vehicle Registration No", "Fuel Type", "Quantity", "Total Amount (Rs.)"]);
+
+    if (fuelRecords.length > 0) {
+      fuelRecords.forEach(f => {
+        const unit = typeof getFuelUnit === 'function' ? getFuelUnit(f.fuelType) : 'L';
+        rows.push([
+          f.id || 'N/A',
+          f.date || 'N/A',
+          f.vehicleNo || 'N/A',
+          f.fuelType || 'Diesel',
+          `${f.liters || 0} ${unit}`,
+          `Rs. ${f.amount || 0}`
+        ]);
+      });
+    } else {
+      rows.push(["No fuel records match the active filters."]);
+    }
+
+    rows.push([]);
+    rows.push(["--- VEHICLE ISSUES (" + issues.length + " matching) ---"]);
+    rows.push(["Issue ID", "Vehicle Registration No", "Issue Summary", "Severity", "Status", "Reported On Date"]);
+
+    if (issues.length > 0) {
+      issues.forEach(i => {
+        rows.push([
+          i.issueId || i.id || 'N/A',
+          i.vehicleNo || 'N/A',
+          i.issue || 'N/A',
+          i.severity || 'Medium',
+          i.status || 'Open',
+          i.reportedOn || 'N/A'
+        ]);
+      });
+    } else {
+      rows.push(["No vehicle issues match the active filters."]);
+    }
+
+    rows.push([]);
+    rows.push(["--- AUDIT LOGS (" + auditRecords.length + " matching) ---"]);
+    rows.push(["Audit ID", "Date & Time", "User", "Action", "Entity", "Entity ID", "Details"]);
+
+    if (auditRecords.length > 0) {
+      auditRecords.forEach(a => {
+        rows.push([
+          a.id || 'N/A',
+          a.dateTime || 'N/A',
+          a.user || 'Admin',
+          a.action || 'Log',
+          a.entity || 'N/A',
+          a.entityId || 'N/A',
+          a.details || 'N/A'
+        ]);
+      });
+    } else {
+      rows.push(["No audit logs match the active filters."]);
+    }
 
     const csvText = rows.map(r => r.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(",")).join("\r\n");
     const fileName = `WASTRAQ_Fleet_Export_${new Date().toISOString().slice(0, 10)}.csv`;

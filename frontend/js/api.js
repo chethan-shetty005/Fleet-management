@@ -20,17 +20,7 @@ function loadStoredState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && Array.isArray(parsed.fuelRecords) && Array.isArray(parsed.vehicles)) {
-        INITIAL_VEHICLES.forEach(initV => {
-          if (!parsed.vehicles.some(v => v.id === initV.id || v.vehicleNo === initV.vehicleNo)) {
-            parsed.vehicles.push(initV);
-          }
-        });
-        INITIAL_FUEL_RECORDS.forEach(initF => {
-          if (!parsed.fuelRecords.some(f => f.id === initF.id)) {
-            parsed.fuelRecords.push(initF);
-          }
-        });
+      if (parsed && typeof parsed === 'object') {
         return parsed;
       }
     }
@@ -40,15 +30,29 @@ function loadStoredState() {
   return null;
 }
 
-// Data store initialized with localStorage fallback to mock data
+// Data store initialized from localStorage if present, preserving newly added data on refresh
 let localState = loadStoredState() || {
   kpis: { ...INITIAL_KPIS },
-  vehicles: [...INITIAL_VEHICLES],
-  fuelRecords: [...INITIAL_FUEL_RECORDS],
-  vehicleIssues: [...INITIAL_VEHICLE_ISSUES],
-  auditRecords: [...INITIAL_AUDIT_RECORDS],
+  vehicles: [],
+  fuelRecords: [],
+  vehicleIssues: [],
+  auditRecords: [],
   chartData: { ...CHART_DATA }
 };
+
+export function clearAllData() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (e) {}
+  localState = {
+    kpis: { ...INITIAL_KPIS },
+    vehicles: [],
+    fuelRecords: [],
+    vehicleIssues: [],
+    auditRecords: [],
+    chartData: { ...CHART_DATA }
+  };
+}
 
 export function saveLocalState() {
   try {
@@ -81,27 +85,19 @@ export async function fetchVehicles() {
     const res = await fetch(`${API_BASE_URL}/vehicles`, { signal: AbortSignal.timeout(1500) });
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        data.forEach(v => {
+      if (Array.isArray(data)) {
+        localState.vehicles = data.map(v => {
           const vNo = v.license_plate || v.v_id || v.id;
-          const existing = localState.vehicles.find(item => item.id === vNo || item.vehicleNo === vNo || item.id === v.v_id);
-          if (existing) {
-            existing.status = v.status || existing.status;
-            existing.type = v.vehicle_type || existing.type;
-            existing.fuelType = v.fuel_type || existing.fuelType;
-            existing.mileage = v.current_mileage || existing.mileage;
-          } else {
-            localState.vehicles.push({
-              id: v.v_id || v.id || vNo,
-              vehicleNo: vNo,
-              type: v.vehicle_type || 'Compactor',
-              status: v.status || 'Active',
-              lastService: '12 Aug 2025',
-              driver: v.driver || 'Assigned Driver',
-              fuelType: v.fuel_type || 'Diesel',
-              mileage: v.current_mileage || 0
-            });
-          }
+          return {
+            id: v.v_id || v.id || vNo,
+            vehicleNo: vNo,
+            type: v.vehicle_type || 'Compactor',
+            status: v.status || 'Active',
+            lastService: '12 Aug 2025',
+            driver: v.driver || 'Assigned Driver',
+            fuelType: v.fuel_type || 'Diesel',
+            mileage: v.current_mileage || 0
+          };
         });
       }
     }
@@ -171,12 +167,8 @@ export async function fetchFuelRecords() {
     const res = await fetch(`${API_BASE_URL}/fuel`, { signal: AbortSignal.timeout(1500) });
     if (res.ok) {
       const dbRecords = await res.json();
-      if (Array.isArray(dbRecords) && dbRecords.length > 0) {
-        dbRecords.forEach(dbR => {
-          if (!localState.fuelRecords.some(r => r.id === dbR.id)) {
-            localState.fuelRecords.unshift(dbR);
-          }
-        });
+      if (Array.isArray(dbRecords)) {
+        localState.fuelRecords = dbRecords;
         recalculateChartData();
       }
     }
@@ -263,6 +255,11 @@ export async function addVehicleIssue(issueData) {
   }
 
   localState.vehicleIssues.unshift(newIssue);
+
+  // Automatically update vehicle status to "Maintenance" when an issue is raised
+  if (newIssue.vehicleNo) {
+    await updateVehicleStatus(newIssue.vehicleNo, 'Maintenance');
+  }
 
   localState.auditRecords.unshift({
     id: `AUD-${Date.now()}`,
@@ -363,6 +360,11 @@ export async function updateIssueStatus(issueId, newStatus) {
       console.log('Local store issue status update fallback');
     }
 
+    // Automatically update vehicle status to "Out of Service" when issue is Resolved or Closed
+    if ((newStatus === 'Resolved' || newStatus === 'Closed') && issue.vehicleNo) {
+      await updateVehicleStatus(issue.vehicleNo, 'Out of Service');
+    }
+
     localState.auditRecords.unshift({
       id: `AUD-${Date.now()}`,
       dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
@@ -378,8 +380,8 @@ export async function updateIssueStatus(issueId, newStatus) {
 }
 
 export function recalculateChartData() {
-  const vehicles = localState.vehicles;
-  const fuelRecords = localState.fuelRecords;
+  const vehicles = localState.vehicles || [];
+  const fuelRecords = localState.fuelRecords || [];
 
   // 1. Fuel by Vehicle Type
   const typeTotals = { Compactor: 0, Tipper: 0, Tractor: 0, Loader: 0 };
@@ -393,17 +395,12 @@ export function recalculateChartData() {
     }
   });
 
-  const baseType = { Compactor: 5650, Tipper: 3250, Tractor: 1950, Loader: 1600 };
-  const totalLitersByT = {};
-  ['Compactor', 'Tipper', 'Tractor', 'Loader'].forEach(t => {
-    totalLitersByT[t] = (baseType[t] || 0) + (typeTotals[t] || 0);
-  });
-  const sumTypeLiters = Object.values(totalLitersByT).reduce((a, b) => a + b, 0) || 1;
+  const sumTypeLiters = Object.values(typeTotals).reduce((a, b) => a + b, 0);
 
   localState.chartData.fuelByVehicleType = {
     labels: ["Compactor", "Tipper", "Tractor", "Loader"],
-    values: ["Compactor", "Tipper", "Tractor", "Loader"].map(t => Math.round(totalLitersByT[t])),
-    percentages: ["Compactor", "Tipper", "Tractor", "Loader"].map(t => Number(((totalLitersByT[t] / sumTypeLiters) * 100).toFixed(1))),
+    values: ["Compactor", "Tipper", "Tractor", "Loader"].map(t => Math.round(typeTotals[t] || 0)),
+    percentages: ["Compactor", "Tipper", "Tractor", "Loader"].map(t => sumTypeLiters > 0 ? Number((( (typeTotals[t] || 0) / sumTypeLiters) * 100).toFixed(1)) : 0),
     colors: ["#3B82F6", "#A855F7", "#EAB308", "#22C55E"]
   };
 
@@ -418,19 +415,14 @@ export function recalculateChartData() {
     }
   });
 
-  const baseFuelType = { Diesel: 9850, CNG: 2600 };
-  const totalFuelT = {
-    Diesel: baseFuelType.Diesel + (fuelTypeTotals.Diesel || 0),
-    CNG: baseFuelType.CNG + (fuelTypeTotals.CNG || 0)
-  };
-  const sumFuelType = (totalFuelT.Diesel + totalFuelT.CNG) || 1;
+  const sumFuelType = (fuelTypeTotals.Diesel + fuelTypeTotals.CNG);
 
   localState.chartData.fuelTypeDistribution = {
     labels: ["Diesel", "CNG"],
-    values: [Math.round(totalFuelT.Diesel), Math.round(totalFuelT.CNG)],
+    values: [Math.round(fuelTypeTotals.Diesel), Math.round(fuelTypeTotals.CNG)],
     percentages: [
-      Number(((totalFuelT.Diesel / sumFuelType) * 100).toFixed(1)),
-      Number(((totalFuelT.CNG / sumFuelType) * 100).toFixed(1))
+      sumFuelType > 0 ? Number(((fuelTypeTotals.Diesel / sumFuelType) * 100).toFixed(1)) : 0,
+      sumFuelType > 0 ? Number(((fuelTypeTotals.CNG / sumFuelType) * 100).toFixed(1)) : 0
     ],
     colors: ["#2563EB", "#10B981"]
   };
@@ -443,27 +435,29 @@ export function recalculateChartData() {
     else typeCounts[t] = 1;
   });
 
-  const baseEff = { Compactor: 8.6, Tipper: 7.4, Tractor: 6.8, Loader: 8.1, Truck: 7.2 };
   localState.chartData.fleetEfficiency = {
     labels: ["Compactor", "Tipper", "Tractor", "Loader", "Truck"],
     values: ["Compactor", "Tipper", "Tractor", "Loader", "Truck"].map(t => {
-      const addedCount = typeCounts[t] || 0;
-      return Number(Math.min(9.9, Math.max(5.0, baseEff[t] + (addedCount * 0.1))).toFixed(1));
+      const count = typeCounts[t] || 0;
+      return count > 0 ? 8.0 : 0;
     }),
     color: "#22C55E"
   };
 
   // 4. Fuel Consumption Trend (L)
-  const addedRecentLiters = fuelRecords.reduce((acc, r) => acc + (r.liters || 0), 0);
-  const updatedLastValue = Math.round(9100 + addedRecentLiters * 0.5);
+  const totalLiters = fuelRecords.reduce((acc, r) => acc + (r.liters || 0), 0);
 
   localState.chartData.fuelTrend = {
     labels: ["21 Aug", "22 Aug", "23 Aug", "24 Aug", "25 Aug", "26 Aug", "27 Aug"],
-    values: [7200, 6800, 8100, 8400, 8300, 9800, updatedLastValue]
+    values: [0, 0, 0, 0, 0, 0, Math.round(totalLiters)]
   };
 
   // Update total KPIs
   localState.kpis.fuelConsumedLiters = Math.round(sumTypeLiters);
+  localState.kpis.totalVehicles = vehicles.length;
+  localState.kpis.activeVehicles = vehicles.filter(v => v.status === 'Active').length;
+  localState.kpis.inactiveVehicles = vehicles.filter(v => v.status !== 'Active').length;
+  localState.kpis.fuelSpendRupees = fuelRecords.reduce((acc, r) => acc + (r.amount || 0), 0);
 
   saveLocalState();
 }

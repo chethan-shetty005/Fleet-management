@@ -272,19 +272,29 @@ export function renderDonutChart(canvasId, data, totalText = "12,450 L") {
   const total = data.values.reduce((a, b) => a + b, 0);
   let startAngle = -Math.PI / 2;
 
-  data.values.forEach((val, i) => {
-    const sliceAngle = (val / total) * Math.PI * 2;
-    const endAngle = startAngle + sliceAngle;
-
+  if (total === 0) {
     ctx.beginPath();
-    ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
-    ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
+    ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, innerRadius, Math.PI * 2, 0, true);
     ctx.closePath();
-    ctx.fillStyle = data.colors[i];
+    ctx.fillStyle = '#E2E8F0';
     ctx.fill();
+  } else {
+    data.values.forEach((val, i) => {
+      if (val === 0) return;
+      const sliceAngle = (val / total) * Math.PI * 2;
+      const endAngle = startAngle + sliceAngle;
 
-    startAngle = endAngle;
-  });
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
+      ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
+      ctx.closePath();
+      ctx.fillStyle = data.colors[i];
+      ctx.fill();
+
+      startAngle = endAngle;
+    });
+  }
 
   // Center text
   ctx.textAlign = 'center';
