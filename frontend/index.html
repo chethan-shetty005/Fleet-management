@@ -1,20 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WASTRAQ | Fleet & Fuel Management Dashboard</title>
-  <meta name="description" content="Comprehensive Fleet & Fuel Operations Management Platform for Municipalities & Enterprise Operations.">
-  <link rel="stylesheet" href="css/styles.css?v=1001">
+  <meta name="description"
+    content="Comprehensive Fleet & Fuel Operations Management Platform for Municipalities & Enterprise Operations.">
+  <link rel="stylesheet" href="css/styles.css?v=2002">
+  <script>
+    (function () {
+      try {
+        var savedTheme = localStorage.getItem('wastraq_theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
+
 <body>
   <div class="app-container">
-    
+
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="logo-badge">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
             <rect x="1" y="3" width="15" height="13"></rect>
             <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
             <circle cx="5.5" cy="18.5" r="2.5"></circle>
@@ -45,7 +61,8 @@
 
       <div class="sidebar-footer">
         <div class="user-profile">
-          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Admin Avatar" class="avatar">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+            alt="Admin Avatar" class="avatar">
           <div class="user-info">
             <span class="user-name">Admin User</span>
             <span class="user-role">Municipality Admin</span>
@@ -63,6 +80,16 @@
           <div class="header-title-block">
             <h1 id="page-title">Fleet & Fuel Management Dashboard</h1>
             <p id="page-subtitle">Overview of your fleet and fuel operations</p>
+          </div>
+          <div class="header-actions">
+            <button type="button" class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle light and dark mode" title="Toggle Light / Dark Mode">
+              <span class="theme-toggle-icon" id="themeToggleIcon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+              </span>
+              <span class="theme-toggle-label" id="themeToggleLabel">Dark Mode</span>
+            </button>
           </div>
         </header>
 
@@ -156,26 +183,43 @@
           <div class="filter-group" style="min-width: 170px;">
             <span class="filter-label">Date Range</span>
             <button type="button" class="date-picker-btn" id="datePickerBtn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
               <span id="dateRangeLabel">01 Aug 2025 - 27 Aug 2025</span>
             </button>
           </div>
 
           <div class="search-group">
             <span class="search-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
             </span>
-            <input type="text" class="search-input" id="searchInput" placeholder="Search Vehicle No / Driver / Issue / Chassis">
+            <input type="text" class="search-input" id="searchInput"
+              placeholder="Search Vehicle No / Driver / Issue / Chassis">
           </div>
 
           <div style="display: flex; gap: 8px; align-items: flex-end;">
-            <button class="btn btn-outline" style="padding: 9px 14px; height: 38px;" id="resetFiltersBtn" title="Reset All Filters">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            <button class="btn btn-outline" style="padding: 9px 14px; height: 38px;" id="resetFiltersBtn"
+              title="Reset All Filters">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
               <span>Reset</span>
             </button>
 
-            <button type="button" class="btn btn-outline" style="padding: 9px 14px; height: 38px;" id="exportBtn" title="Export Fleet Data CSV">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <button type="button" class="btn btn-outline" style="padding: 9px 14px; height: 38px;" id="exportBtn"
+              title="Export Fleet Data CSV">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
               <span>Export</span>
             </button>
           </div>
@@ -183,14 +227,17 @@
 
         <!-- Dynamic Grid Content (Tables & Charts) -->
         <div class="dashboard-grid" id="dashboardContentGrid">
-          
+
           <!-- Row 1: Vehicles & Fuel Records -->
           <div class="card" id="cardVehicles">
             <div class="card-header">
               <h2 class="card-title">Vehicles</h2>
               <div class="card-actions">
                 <button type="button" class="btn btn-primary btn-sm" id="openAddVehicleBtn">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
                   <span>Add Vehicle</span>
                 </button>
                 <a href="#" class="view-all-link" data-tab="vehicles">View all</a>
@@ -220,7 +267,10 @@
               <h2 class="card-title">Fuel Records</h2>
               <div class="card-actions">
                 <button type="button" class="btn btn-secondary btn-sm" id="openAddFuelBtn">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
                   <span>Add Fuel Record</span>
                 </button>
                 <a href="#" class="view-all-link" data-tab="fuel">View all</a>
@@ -252,7 +302,12 @@
               <h2 class="card-title">Vehicle Issues</h2>
               <div class="card-actions">
                 <button type="button" class="btn btn-warning btn-sm" id="openRaiseIssueBtn">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                    </path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
                   <span>Raise Issue</span>
                 </button>
                 <a href="#" class="view-all-link" data-tab="issues">View all</a>
@@ -304,10 +359,14 @@
                     <canvas id="donutVehicleTypeCanvas"></canvas>
                   </div>
                   <div class="legend-list" id="legendVehicleType">
-                    <div class="legend-item"><span class="legend-color-dot" style="background:#3B82F6;"></span>Compactor 5,650 L (45.4%)</div>
-                    <div class="legend-item"><span class="legend-color-dot" style="background:#A855F7;"></span>Tipper 3,250 L (26.1%)</div>
-                    <div class="legend-item"><span class="legend-color-dot" style="background:#EAB308;"></span>Tractor 1,950 L (15.7%)</div>
-                    <div class="legend-item"><span class="legend-color-dot" style="background:#22C55E;"></span>Loader 1,600 L (12.8%)</div>
+                    <div class="legend-item"><span class="legend-color-dot" style="background:#3B82F6;"></span>Compactor
+                      5,650 L (45.4%)</div>
+                    <div class="legend-item"><span class="legend-color-dot" style="background:#A855F7;"></span>Tipper
+                      3,250 L (26.1%)</div>
+                    <div class="legend-item"><span class="legend-color-dot" style="background:#EAB308;"></span>Tractor
+                      1,950 L (15.7%)</div>
+                    <div class="legend-item"><span class="legend-color-dot" style="background:#22C55E;"></span>Loader
+                      1,600 L (12.8%)</div>
                   </div>
                 </div>
               </div>
@@ -359,8 +418,10 @@
                     <canvas id="donutFuelTypeCanvas"></canvas>
                   </div>
                   <div class="legend-list" id="legendFuelType">
-                    <div class="legend-item"><span class="legend-color-dot" style="background:#2563EB;"></span>Diesel 9,850 L (79.1%)</div>
-                    <div class="legend-item"><span class="legend-color-dot" style="background:#10B981;"></span>CNG 2,600 L (20.9%)</div>
+                    <div class="legend-item"><span class="legend-color-dot" style="background:#2563EB;"></span>Diesel
+                      9,850 L (79.1%)</div>
+                    <div class="legend-item"><span class="legend-color-dot" style="background:#10B981;"></span>CNG 2,600
+                      L (20.9%)</div>
                   </div>
                 </div>
               </div>
@@ -374,7 +435,11 @@
       <!-- Footer Bar -->
       <footer class="app-footer">
         <span>Last updated: <strong id="lastUpdatedTime">27 Aug 2025 11:30 AM</strong></span>
-        <svg class="refresh-icon" id="refreshBtn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M2.5 22v-6h6"></path><path d="M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.2L2.5 16"></path></svg>
+        <svg class="refresh-icon" id="refreshBtn" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5">
+          <path d="M21.5 2v6h-6M2.5 22v-6h6"></path>
+          <path d="M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.2L2.5 16"></path>
+        </svg>
       </footer>
     </div>
   </div>
@@ -409,7 +474,8 @@
           </div>
           <div class="form-group" id="customVehicleTypeGroup" style="display: none;">
             <label class="form-label">Custom Vehicle Type Name</label>
-            <input type="text" id="customVehicleTypeInput" name="customType" class="form-input" placeholder="e.g. Sweeper, Water Tanker, Ambulance" maxlength="50">
+            <input type="text" id="customVehicleTypeInput" name="customType" class="form-input"
+              placeholder="e.g. Sweeper, Water Tanker, Ambulance" maxlength="50">
           </div>
           <div class="form-group">
             <label class="form-label">Fuel Type</label>
@@ -479,7 +545,8 @@
           </div>
           <div class="form-group">
             <label class="form-label" id="fuelQuantityLabel">Fuel Quantity (Liters)</label>
-            <input type="number" step="0.01" name="liters" id="fuelQuantityInput" class="form-input" placeholder="e.g. 120.00" required>
+            <input type="number" step="0.01" name="liters" id="fuelQuantityInput" class="form-input"
+              placeholder="e.g. 120.00" required>
           </div>
           <div class="form-group">
             <label class="form-label">Total Amount (₹)</label>
@@ -511,7 +578,8 @@
           </div>
           <div class="form-group">
             <label class="form-label">Issue Summary</label>
-            <input type="text" name="issue" class="form-input" placeholder="e.g. Engine Overheating / Brake Pad Wear" required>
+            <input type="text" name="issue" class="form-input" placeholder="e.g. Engine Overheating / Brake Pad Wear"
+              required>
           </div>
           <div class="form-group">
             <label class="form-label">Severity Level</label>
@@ -528,14 +596,20 @@
               <option value="In Progress">In Progress</option>
             </select>
             <p class="form-note">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; color: #D97706;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style="flex-shrink: 0; color: #D97706;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
               <span>Please put the vehicle to maintance before raising issue in the vehicle section</span>
             </p>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline cancel-modal-btn">Cancel</button>
-          <button type="submit" class="btn btn-primary" style="background: #D97706; border-color: #D97706;">Submit Issue</button>
+          <button type="submit" class="btn btn-primary" style="background: #D97706; border-color: #D97706;">Submit
+            Issue</button>
         </div>
       </form>
     </div>
@@ -569,10 +643,14 @@
           <div class="form-group">
             <label class="form-label">Quick Presets</label>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button type="button" class="btn btn-outline preset-date-btn" data-range="today" style="padding: 5px 10px; font-size: 11px;">Today</button>
-              <button type="button" class="btn btn-outline preset-date-btn" data-range="7days" style="padding: 5px 10px; font-size: 11px;">Last 7 Days</button>
-              <button type="button" class="btn btn-outline preset-date-btn" data-range="month" style="padding: 5px 10px; font-size: 11px;">This Month</button>
-              <button type="button" class="btn btn-outline preset-date-btn" data-range="ytd" style="padding: 5px 10px; font-size: 11px;">YTD</button>
+              <button type="button" class="btn btn-outline preset-date-btn" data-range="today"
+                style="padding: 5px 10px; font-size: 11px;">Today</button>
+              <button type="button" class="btn btn-outline preset-date-btn" data-range="7days"
+                style="padding: 5px 10px; font-size: 11px;">Last 7 Days</button>
+              <button type="button" class="btn btn-outline preset-date-btn" data-range="month"
+                style="padding: 5px 10px; font-size: 11px;">This Month</button>
+              <button type="button" class="btn btn-outline preset-date-btn" data-range="ytd"
+                style="padding: 5px 10px; font-size: 11px;">YTD</button>
             </div>
           </div>
           <div class="form-group">
@@ -593,6 +671,7 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=10004"></script>
+  <script type="module" src="js/app.js?v=20005"></script>
 </body>
+
 </html>

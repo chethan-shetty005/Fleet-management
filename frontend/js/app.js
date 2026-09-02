@@ -29,6 +29,7 @@ let state = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+  initTheme();
   await loadData();
   setupEventListeners();
   initModals({
@@ -858,6 +859,117 @@ function setupChartResizeObserver() {
   containers.forEach(el => observer.observe(el));
 }
 
+/* Theme Management (Light / Dark Mode with Circular Reveal) */
+function initTheme() {
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  const themeToggleLabel = document.getElementById('themeToggleLabel');
+  const themeToggleIcon = document.getElementById('themeToggleIcon');
+
+  function getSavedTheme() {
+    return localStorage.getItem('wastraq_theme') ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  }
+
+  let transitionTimer = null;
+
+  function applyTheme(theme, isFallbackAction = false) {
+    if (isFallbackAction) {
+      if (transitionTimer) clearTimeout(transitionTimer);
+      document.documentElement.classList.add('theme-transitioning');
+    }
+
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('wastraq_theme', theme);
+
+    const isDark = theme === 'dark';
+
+    if (themeToggleLabel) {
+      themeToggleLabel.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+    }
+
+    if (themeToggleIcon) {
+      if (isDark) {
+        // Sun icon (click to switch to light mode)
+        themeToggleIcon.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>`;
+      } else {
+        // Moon icon (click to switch to dark mode)
+        themeToggleIcon.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>`;
+      }
+    }
+
+    if (typeof renderCharts === 'function') {
+      renderCharts();
+    }
+
+    if (isFallbackAction) {
+      transitionTimer = setTimeout(() => {
+        document.documentElement.classList.remove('theme-transitioning');
+      }, 350);
+    }
+  }
+
+  const currentTheme = getSavedTheme();
+  applyTheme(currentTheme, false);
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', (event) => {
+      const activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
+      const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
+
+      const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Circular Reveal via View Transitions API originating from themeToggleBtn center
+      if (!isReducedMotion && typeof document.startViewTransition === 'function') {
+        const rect = themeToggleBtn.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+
+        const endRadius = Math.hypot(
+          Math.max(x, window.innerWidth - x),
+          Math.max(y, window.innerHeight - y)
+        );
+
+        const transition = document.startViewTransition(() => {
+          applyTheme(nextTheme, false);
+        });
+
+        transition.ready.then(() => {
+          document.documentElement.animate(
+            {
+              clipPath: [
+                `circle(0px at ${x}px ${y}px)`,
+                `circle(${endRadius}px at ${x}px ${y}px)`
+              ]
+            },
+            {
+              duration: 600,
+              easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+              pseudoElement: '::view-transition-new(root)'
+            }
+          );
+        });
+      } else {
+        // Fallback to smooth CSS color transition
+        applyTheme(nextTheme, true);
+      }
+    });
+  }
+}
+
 /* Event Listeners */
 function setupEventListeners() {
   document.getElementById('toggleConsumptionBtn')?.addEventListener('click', () => {
@@ -1169,8 +1281,8 @@ function openFullListModal(tab) {
     const tableRows = filtered.length === 0
       ? `<tr><td colspan="7" style="text-align:center; padding:24px; color:#64748b;">No vehicles match current filter criteria</td></tr>`
       : filtered.map(v => {
-          const badgeClass = v.status === 'Active' ? 'badge-active' : v.status === 'Inactive' ? 'badge-inactive' : v.status === 'Maintenance' ? 'badge-maintenance' : 'badge-out-of-service';
-          return `
+        const badgeClass = v.status === 'Active' ? 'badge-active' : v.status === 'Inactive' ? 'badge-inactive' : v.status === 'Maintenance' ? 'badge-maintenance' : 'badge-out-of-service';
+        return `
             <tr>
               <td><strong>${v.vehicleNo}</strong></td>
               <td>${v.type}</td>
@@ -1181,7 +1293,7 @@ function openFullListModal(tab) {
               <td>${(v.mileage || 0).toLocaleString()} km</td>
             </tr>
           `;
-        }).join('');
+      }).join('');
 
     const contentHtml = `
       <div class="popup-summary-bar">
@@ -1219,8 +1331,8 @@ function openFullListModal(tab) {
     const tableRows = filtered.length === 0
       ? `<tr><td colspan="5" style="text-align:center; padding:24px; color:#64748b;">No fuel records match current filter criteria</td></tr>`
       : filtered.map(f => {
-          const unit = getFuelUnit(f.fuelType);
-          return `
+        const unit = getFuelUnit(f.fuelType);
+        return `
             <tr>
               <td>${f.date}</td>
               <td><strong>${f.vehicleNo}</strong></td>
@@ -1229,7 +1341,7 @@ function openFullListModal(tab) {
               <td>₹${f.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
             </tr>
           `;
-        }).join('');
+      }).join('');
 
     const contentHtml = `
       <div class="popup-summary-bar">
@@ -1262,9 +1374,9 @@ function openFullListModal(tab) {
     const tableRows = filtered.length === 0
       ? `<tr><td colspan="6" style="text-align:center; padding:24px; color:#64748b;">No maintenance issues match current filter criteria</td></tr>`
       : filtered.map(i => {
-          const sevClass = i.severity === 'High' ? 'badge-high' : i.severity === 'Medium' ? 'badge-medium' : 'badge-low';
-          const statusClass = i.status === 'Open' ? 'badge-open' : i.status === 'In Progress' ? 'badge-in-progress' : i.status === 'Resolved' ? 'badge-resolved' : 'badge-closed';
-          return `
+        const sevClass = i.severity === 'High' ? 'badge-high' : i.severity === 'Medium' ? 'badge-medium' : 'badge-low';
+        const statusClass = i.status === 'Open' ? 'badge-open' : i.status === 'In Progress' ? 'badge-in-progress' : i.status === 'Resolved' ? 'badge-resolved' : 'badge-closed';
+        return `
             <tr>
               <td><strong>${i.issueId}</strong></td>
               <td>${i.vehicleNo}</td>
@@ -1274,7 +1386,7 @@ function openFullListModal(tab) {
               <td>${i.reportedOn}</td>
             </tr>
           `;
-        }).join('');
+      }).join('');
 
     const contentHtml = `
       <div class="popup-summary-bar">

@@ -7,12 +7,12 @@ export function renderLineChart(canvasId, data, options = {}) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  
+
   const rect = canvas.getBoundingClientRect();
   const width = Math.floor(rect.width || canvas.parentElement?.clientWidth || 500);
   const height = Math.floor(rect.height || canvas.parentElement?.clientHeight || 220);
   if (width <= 0 || height <= 0) return;
-  
+
   const dpr = window.devicePixelRatio || 2;
   canvas.width = width * dpr;
   canvas.height = height * dpr;
@@ -72,10 +72,17 @@ export function renderLineChart(canvasId, data, options = {}) {
     return `${unitPrefix}${v}${unitSuffix}`;
   };
 
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const gridColor = isDark ? '#2D3446' : '#E8ECEF';
+  const axisTextColor = isDark ? '#94A3B8' : '#9A9FA5';
+  const labelTextColor = isDark ? '#CBD5E1' : '#6F767E';
+  const pointTextColor = isDark ? '#FFFFFF' : '#1A1D1F';
+  const pointDotBg = isDark ? '#181C26' : '#FFFFFF';
+
   // Grid lines & Y Axis Labels (4 ticks)
-  ctx.strokeStyle = '#E8ECEF';
+  ctx.strokeStyle = gridColor;
   ctx.lineWidth = 1;
-  ctx.fillStyle = '#9A9FA5';
+  ctx.fillStyle = axisTextColor;
   ctx.font = '600 11px "Plus Jakarta Sans", sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
@@ -89,7 +96,7 @@ export function renderLineChart(canvasId, data, options = {}) {
   ySteps.forEach(yVal => {
     const yRatio = (yVal - minVal) / (maxVal - minVal);
     const yPos = height - padding.bottom - yRatio * (height - padding.top - padding.bottom);
-    
+
     ctx.beginPath();
     ctx.moveTo(padding.left, yPos);
     ctx.lineTo(width - padding.right, yPos);
@@ -111,7 +118,7 @@ export function renderLineChart(canvasId, data, options = {}) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   points.forEach(pt => {
-    ctx.fillStyle = '#6F767E';
+    ctx.fillStyle = labelTextColor;
     ctx.font = '600 11px "Plus Jakarta Sans", sans-serif';
     ctx.fillText(pt.label, pt.x, height - padding.bottom + 10);
   });
@@ -159,13 +166,13 @@ export function renderLineChart(canvasId, data, options = {}) {
   points.forEach(pt => {
     ctx.beginPath();
     ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = pointDotBg;
     ctx.fill();
     ctx.strokeStyle = '#3B82F6';
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    ctx.fillStyle = '#1A1D1F';
+    ctx.fillStyle = pointTextColor;
     ctx.font = '700 10px "Plus Jakarta Sans", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
@@ -196,8 +203,14 @@ export function renderBarChart(canvasId, data) {
   const values = data.values;
   const maxVal = 10;
 
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const gridColor = isDark ? '#2D3446' : '#E8ECEF';
+  const axisTextColor = isDark ? '#94A3B8' : '#9A9FA5';
+  const labelTextColor = isDark ? '#CBD5E1' : '#6F767E';
+  const valTextColor = isDark ? '#FFFFFF' : '#1A1D1F';
+
   // Grid lines
-  ctx.strokeStyle = '#E8ECEF';
+  ctx.strokeStyle = gridColor;
   ctx.lineWidth = 1;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
@@ -208,7 +221,7 @@ export function renderBarChart(canvasId, data) {
     ctx.lineTo(width - padding.right, yPos);
     ctx.stroke();
 
-    ctx.fillStyle = '#9A9FA5';
+    ctx.fillStyle = axisTextColor;
     ctx.font = '600 11px "Plus Jakarta Sans"';
     ctx.fillText(v, padding.left - 8, yPos);
   });
@@ -233,14 +246,14 @@ export function renderBarChart(canvasId, data) {
     ctx.fill();
 
     // Value Label above bar
-    ctx.fillStyle = '#1A1D1F';
+    ctx.fillStyle = valTextColor;
     ctx.font = '700 12px "Plus Jakarta Sans"';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillText(val.toFixed(1), xPos + barWidth / 2, yPos - 6);
 
     // X Axis Label
-    ctx.fillStyle = '#6F767E';
+    ctx.fillStyle = labelTextColor;
     ctx.font = '600 11px "Plus Jakarta Sans"';
     ctx.textBaseline = 'top';
     ctx.fillText(label, xPos + barWidth / 2, height - padding.bottom + 10);
@@ -272,12 +285,17 @@ export function renderDonutChart(canvasId, data, totalText = "12,450 L") {
   const total = data.values.reduce((a, b) => a + b, 0);
   let startAngle = -Math.PI / 2;
 
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const centerTextColor = isDark ? '#FFFFFF' : '#1A1D1F';
+  const centerSubtextColor = isDark ? '#CBD5E1' : '#9A9FA5';
+  const emptyRingColor = isDark ? '#2D3446' : '#E2E8F0';
+
   if (total === 0) {
     ctx.beginPath();
     ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
     ctx.arc(centerX, centerY, innerRadius, Math.PI * 2, 0, true);
     ctx.closePath();
-    ctx.fillStyle = '#E2E8F0';
+    ctx.fillStyle = emptyRingColor;
     ctx.fill();
   } else {
     data.values.forEach((val, i) => {
@@ -299,11 +317,11 @@ export function renderDonutChart(canvasId, data, totalText = "12,450 L") {
   // Center text
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#1A1D1F';
-  ctx.font = '800 12px "Plus Jakarta Sans"';
+  ctx.fillStyle = centerTextColor;
+  ctx.font = '800 13px "Plus Jakarta Sans", sans-serif';
   ctx.fillText(totalText, centerX, centerY - 6);
 
-  ctx.fillStyle = '#9A9FA5';
-  ctx.font = '600 10px "Plus Jakarta Sans"';
+  ctx.fillStyle = centerSubtextColor;
+  ctx.font = '600 11px "Plus Jakarta Sans", sans-serif';
   ctx.fillText('Total', centerX, centerY + 8);
 }
