@@ -3,9 +3,9 @@
  * Integrates API Service, Custom Chart Canvas Renderer, and Interactive Modals.
  */
 
-import { fetchKPIs, fetchVehicles, fetchFuelRecords, addVehicle, addFuelRecord, addVehicleIssue, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js?v=10004';
-import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js?v=10004';
-import { initModals, openDetailModal } from './modals.js?v=10004';
+import { fetchKPIs, fetchVehicles, fetchFuelRecords, fetchVehicleIssues, addVehicle, addFuelRecord, addVehicleIssue, deleteVehicle, updateVehicleStatus, deleteFuelRecord, resolveIssue, updateIssueStatus, getLocalState } from './api.js?v=10005';
+import { renderLineChart, renderBarChart, renderDonutChart } from './charts.js?v=10005';
+import { initModals, openDetailModal } from './modals.js?v=10005';
 
 let state = {
   kpis: {},
@@ -120,8 +120,8 @@ async function loadData() {
   state.kpis = await fetchKPIs();
   state.vehicles = await fetchVehicles();
   state.fuelRecords = await fetchFuelRecords();
+  state.issues = await fetchVehicleIssues();
   const local = getLocalState();
-  state.issues = local.vehicleIssues;
   state.audits = local.auditRecords;
 
   updateVehicleTypeSelects();

@@ -1,7 +1,6 @@
 /**
  * WASTRAQ Fleet Management API Service Layer
- * Connects to FastAPI Backend at http://localhost:8000/api/v1
- * with automatic fallback to mock data store.
+ * Connects directly to FastAPI Backend at http://localhost:8000/api/v1
  */
 
 import {
@@ -12,6 +11,8 @@ import {
   INITIAL_AUDIT_RECORDS,
   CHART_DATA
 } from './mockData.js';
+
+export const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 const STORAGE_KEY = 'wastraq_fleet_state_v1';
 
@@ -30,7 +31,6 @@ function loadStoredState() {
   return null;
 }
 
-// Data store initialized from localStorage if present, preserving newly added data on refresh
 let localState = loadStoredState() || {
   kpis: { ...INITIAL_KPIS },
   vehicles: [],
@@ -62,60 +62,123 @@ export function saveLocalState() {
   }
 }
 
+/**
+ * Toast Notification System to display API failures & success to the user
+ */
+export function showToast(message, type = 'error') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      ${type === 'error' 
+        ? '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'
+        : '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>'
+      }
+    </svg>
+    <span>${escapeHtml(message)}</span>
+  `;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    setTimeout(() => toast.remove(), 300);
+  }, 4500);
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, function(m) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+  });
+}
+
+/**
+ * Centralized API response handler. Throws Error on non-ok HTTP responses with detail string.
+ */
+async function handleResponse(res, contextMessage = 'API request failed') {
+  if (!res.ok) {
+    let errorDetail = `${contextMessage} (${res.status} ${res.statusText})`;
+    try {
+      const data = await res.json();
+      if (data && data.detail) {
+        if (typeof data.detail === 'string') {
+          errorDetail = data.detail;
+        } else if (Array.isArray(data.detail)) {
+          errorDetail = data.detail.map(e => e.msg || JSON.stringify(e)).join(', ');
+        } else {
+          errorDetail = JSON.stringify(data.detail);
+        }
+      }
+    } catch (e) {}
+    throw new Error(errorDetail);
+  }
+  if (res.status === 204) return null;
+  return await res.json();
+}
+
+/**
+ * GET /analytics/overview
+ */
 export async function fetchKPIs() {
   try {
-    const res = await fetch(`${API_BASE_URL}/analytics/overview`, { signal: AbortSignal.timeout(1500) });
-    if (res.ok) {
-      const data = await res.json();
-      return {
-        ...localState.kpis,
-        totalVehicles: data.total_vehicles || localState.kpis.totalVehicles,
-        activeVehicles: data.active_vehicles || localState.kpis.activeVehicles,
-        inactiveVehicles: data.maintenance_vehicles || localState.kpis.inactiveVehicles
-      };
-    }
+    const res = await fetch(`${API_BASE_URL}/analytics/overview`);
+    const data = await handleResponse(res, 'Failed to fetch KPIs');
+    
+    localState.kpis = {
+      ...localState.kpis,
+      totalVehicles: data.total_vehicles || 0,
+      activeVehicles: data.active_vehicles || 0,
+      inactiveVehicles: (data.maintenance_vehicles || 0) + (data.out_of_service_vehicles || 0),
+      fuelConsumedLiters: Math.round(data.total_fuel_consumed_liters || 0),
+      fuelSpendRupees: Math.round(data.total_maintenance_cost || 0)
+    };
+    saveLocalState();
+    return localState.kpis;
   } catch (err) {
-    console.log('Using local state for KPIs');
+    showToast(`API Error (KPIs): ${err.message}`, 'error');
+    throw err;
   }
-  return localState.kpis;
 }
 
+/**
+ * GET /vehicles
+ */
 export async function fetchVehicles() {
   try {
-    const res = await fetch(`${API_BASE_URL}/vehicles`, { signal: AbortSignal.timeout(1500) });
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        data.forEach(v => {
-          const vNo = v.license_plate || v.v_id || v.id;
-          const existing = localState.vehicles.find(item => item.id === vNo || item.vehicleNo === vNo);
-          if (existing) {
-            existing.status = v.status || existing.status;
-            existing.type = v.vehicle_type || existing.type;
-            existing.fuelType = v.fuel_type || existing.fuelType;
-            existing.mileage = v.current_mileage || existing.mileage;
-          } else {
-            localState.vehicles.push({
-              id: v.v_id || v.id || vNo,
-              vehicleNo: vNo,
-              type: v.vehicle_type || 'Compactor',
-              status: v.status || 'Active',
-              lastService: '12 Aug 2025',
-              driver: v.driver || 'Assigned Driver',
-              fuelType: v.fuel_type || 'Diesel',
-              mileage: v.current_mileage || 0
-            });
-          }
-        });
-        saveLocalState();
-      }
+    const res = await fetch(`${API_BASE_URL}/vehicles`);
+    const data = await handleResponse(res, 'Failed to fetch vehicles');
+    
+    if (Array.isArray(data)) {
+      localState.vehicles = data.map(v => ({
+        id: v.v_id || v.id,
+        vehicleNo: v.license_plate || v.v_id,
+        type: v.vehicle_type || v.model || 'Compactor',
+        status: v.status || 'Active',
+        lastService: v.updated_at ? new Date(v.updated_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '12 Aug 2025',
+        driver: 'Assigned Driver',
+        fuelType: v.fuel_type || 'Diesel',
+        mileage: Number(v.current_mileage || 0)
+      }));
+      saveLocalState();
+      recalculateChartData();
     }
+    return localState.vehicles;
   } catch (err) {
-    console.log('Using local state for Vehicles');
+    showToast(`API Error (Vehicles): ${err.message}`, 'error');
+    throw err;
   }
-  return localState.vehicles;
 }
 
+/**
+ * POST /vehicles
+ */
 export async function addVehicle(vehicleData) {
   try {
     const res = await fetch(`${API_BASE_URL}/vehicles`, {
@@ -133,66 +196,127 @@ export async function addVehicle(vehicleData) {
         current_mileage: Number(vehicleData.mileage || 0)
       })
     });
-    if (res.ok) {
-      console.log('Vehicle saved to backend');
-    }
+    const saved = await handleResponse(res, 'Failed to add vehicle');
+    showToast(`Vehicle '${saved.license_plate}' created in backend!`, 'success');
+
+    const newV = {
+      id: saved.v_id || saved.id,
+      vehicleNo: saved.license_plate || saved.v_id,
+      type: saved.vehicle_type || vehicleData.type,
+      status: saved.status || 'Active',
+      lastService: 'Just now',
+      driver: vehicleData.driver || 'Admin Assigned',
+      fuelType: saved.fuel_type || vehicleData.fuelType || 'Diesel',
+      mileage: Number(saved.current_mileage || 0)
+    };
+
+    localState.vehicles.unshift(newV);
+
+    localState.auditRecords.unshift({
+      id: `AUD-${Date.now()}`,
+      dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      user: 'Admin User',
+      action: 'Vehicle Added',
+      entity: 'Vehicle',
+      entityId: newV.vehicleNo,
+      details: `Added new ${newV.type} vehicle (${newV.vehicleNo})`
+    });
+
+    saveLocalState();
+    recalculateChartData();
+    return newV;
   } catch (err) {
-    console.log('Local store vehicle add fallback');
+    showToast(`API Error (Add Vehicle): ${err.message}`, 'error');
+    throw err;
   }
-
-  // Update local state
-  const newV = {
-    id: vehicleData.vehicleNo,
-    vehicleNo: vehicleData.vehicleNo,
-    type: vehicleData.type,
-    status: vehicleData.status || 'Active',
-    lastService: 'Just now',
-    driver: vehicleData.driver || 'Admin Assigned',
-    fuelType: vehicleData.fuelType || 'Diesel',
-    mileage: Number(vehicleData.mileage || 0)
-  };
-  localState.vehicles.unshift(newV);
-  localState.kpis.totalVehicles += 1;
-  if (newV.status === 'Active') localState.kpis.activeVehicles += 1;
-  else localState.kpis.inactiveVehicles += 1;
-
-  // Add audit log
-  localState.auditRecords.unshift({
-    id: `AUD-${Date.now()}`,
-    dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-    user: 'Admin User',
-    action: 'Vehicle Added',
-    entity: 'Vehicle',
-    entityId: newV.vehicleNo,
-    details: `Added new ${newV.type} vehicle (${newV.vehicleNo})`
-  });
-
-  saveLocalState();
-  recalculateChartData();
-  return newV;
 }
 
+/**
+ * PUT /vehicles/{id}
+ */
+export async function updateVehicleStatus(id, newStatus) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    const updated = await handleResponse(res, 'Failed to update vehicle status');
+    showToast(`Vehicle ${id} status updated to '${newStatus}'`, 'success');
+
+    const v = localState.vehicles.find(item => item.id === id || item.vehicleNo === id);
+    if (v) {
+      const oldStatus = v.status;
+      v.status = updated.status || newStatus;
+      localState.auditRecords.unshift({
+        id: `AUD-${Date.now()}`,
+        dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        user: 'Admin User',
+        action: 'Vehicle Updated',
+        entity: 'Vehicle',
+        entityId: v.vehicleNo || v.id,
+        details: `Updated status from ${oldStatus} to ${newStatus}`
+      });
+      saveLocalState();
+    }
+    return updated;
+  } catch (err) {
+    showToast(`API Error (Update Status): ${err.message}`, 'error');
+    throw err;
+  }
+}
+
+/**
+ * DELETE /vehicles/{id}
+ */
+export async function deleteVehicle(id) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
+      method: 'DELETE'
+    });
+    await handleResponse(res, 'Failed to delete vehicle');
+    showToast(`Vehicle ${id} deleted from backend`, 'success');
+
+    localState.vehicles = localState.vehicles.filter(v => v.id !== id && v.vehicleNo !== id);
+    recalculateChartData();
+    saveLocalState();
+    return true;
+  } catch (err) {
+    showToast(`API Error (Delete Vehicle): ${err.message}`, 'error');
+    throw err;
+  }
+}
+
+/**
+ * GET /fuel
+ */
 export async function fetchFuelRecords() {
   try {
-    const res = await fetch(`${API_BASE_URL}/fuel`, { signal: AbortSignal.timeout(1500) });
-    if (res.ok) {
-      const dbRecords = await res.json();
-      if (Array.isArray(dbRecords) && dbRecords.length > 0) {
-        dbRecords.forEach(dbR => {
-          if (!localState.fuelRecords.some(r => r.id === dbR.id)) {
-            localState.fuelRecords.unshift(dbR);
-          }
-        });
-        saveLocalState();
-        recalculateChartData();
-      }
+    const res = await fetch(`${API_BASE_URL}/fuel`);
+    const data = await handleResponse(res, 'Failed to fetch fuel records');
+    
+    if (Array.isArray(data)) {
+      localState.fuelRecords = data.map(f => ({
+        id: f.id || f.record_id,
+        date: f.date,
+        vehicleNo: f.vehicleNo,
+        fuelType: f.fuelType || 'Diesel',
+        liters: Number(f.liters || 0),
+        amount: Number(f.amount || 0)
+      }));
+      saveLocalState();
+      recalculateChartData();
     }
+    return localState.fuelRecords;
   } catch (err) {
-    console.log('Using local store for Fuel Records');
+    showToast(`API Error (Fuel Records): ${err.message}`, 'error');
+    throw err;
   }
-  return localState.fuelRecords;
 }
 
+/**
+ * POST /fuel
+ */
 export async function addFuelRecord(record) {
   const newRecord = {
     id: `FR-2025-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -216,32 +340,78 @@ export async function addFuelRecord(record) {
         amount: newRecord.amount
       })
     });
-    if (res.ok) {
-      const savedObj = await res.json();
-      if (savedObj && savedObj.id) newRecord.id = savedObj.id;
-    }
+    const saved = await handleResponse(res, 'Failed to save fuel record');
+    showToast(`Fuel record logged for vehicle ${newRecord.vehicleNo}!`, 'success');
+    if (saved && saved.id) newRecord.id = saved.id;
+
+    localState.fuelRecords.unshift(newRecord);
+    localState.auditRecords.unshift({
+      id: `AUD-${Date.now()}`,
+      dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      user: 'Admin User',
+      action: 'Fuel Added',
+      entity: 'Fuel Record',
+      entityId: newRecord.id,
+      details: `Added ${newRecord.liters.toFixed(2)} L for ${newRecord.vehicleNo}`
+    });
+
+    saveLocalState();
+    recalculateChartData();
+    return newRecord;
   } catch (err) {
-    console.log('DB save fallback to local storage:', err);
+    showToast(`API Error (Add Fuel Record): ${err.message}`, 'error');
+    throw err;
   }
-
-  localState.fuelRecords.unshift(newRecord);
-  localState.kpis.fuelConsumedLiters += newRecord.liters;
-  localState.kpis.fuelSpendRupees += newRecord.amount;
-
-  localState.auditRecords.unshift({
-    id: `AUD-${Date.now()}`,
-    dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-    user: 'Admin User',
-    action: 'Fuel Added',
-    entity: 'Fuel Record',
-    entityId: newRecord.id,
-    details: `Added ${newRecord.liters.toFixed(2)} L for ${newRecord.vehicleNo}`
-  });
-
-  recalculateChartData();
-  return newRecord;
 }
 
+/**
+ * DELETE /fuel/{id}
+ */
+export async function deleteFuelRecord(id) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/fuel/${id}`, { method: 'DELETE' });
+    await handleResponse(res, 'Failed to delete fuel record');
+    showToast(`Fuel record deleted`, 'success');
+
+    localState.fuelRecords = localState.fuelRecords.filter(f => f.id !== id);
+    recalculateChartData();
+    saveLocalState();
+    return true;
+  } catch (err) {
+    showToast(`API Error (Delete Fuel Record): ${err.message}`, 'error');
+    throw err;
+  }
+}
+
+/**
+ * GET /maintenance
+ */
+export async function fetchVehicleIssues() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/maintenance`);
+    const data = await handleResponse(res, 'Failed to fetch maintenance logs');
+    if (Array.isArray(data)) {
+      localState.vehicleIssues = data.map(m => ({
+        id: m.log_id || String(m.id),
+        issueId: m.log_id || `MNT-${m.id}`,
+        vehicleNo: m.v_id,
+        issue: m.description || m.service_type || 'Maintenance Service',
+        severity: 'Medium',
+        status: m.status || 'In Progress',
+        reportedOn: m.service_date ? String(m.service_date) : new Date().toLocaleDateString('en-GB')
+      }));
+      saveLocalState();
+    }
+    return localState.vehicleIssues;
+  } catch (err) {
+    showToast(`API Error (Maintenance Logs): ${err.message}`, 'error');
+    throw err;
+  }
+}
+
+/**
+ * POST /maintenance
+ */
 export async function addVehicleIssue(issueData) {
   const newIssue = {
     id: `ISS-${Date.now()}`,
@@ -249,149 +419,93 @@ export async function addVehicleIssue(issueData) {
     vehicleNo: issueData.vehicleNo,
     issue: issueData.issue,
     severity: issueData.severity || 'Medium',
-    status: issueData.status || 'Open',
+    status: issueData.status || 'In Progress',
     reportedOn: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
   };
 
   try {
-    await fetch(`${API_BASE_URL}/maintenance`, {
+    const res = await fetch(`${API_BASE_URL}/maintenance`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         log_id: newIssue.issueId,
         v_id: newIssue.vehicleNo,
+        service_type: (newIssue.issue || 'Service Issue').substring(0, 50),
         description: newIssue.issue,
-        severity: newIssue.severity,
+        cost: 0.0,
         status: newIssue.status
       })
     });
-  } catch (err) {
-    console.log('DB issue save fallback to local storage:', err);
-  }
+    const saved = await handleResponse(res, 'Failed to raise vehicle issue');
+    showToast(`Vehicle issue ${newIssue.issueId} submitted!`, 'success');
 
-  localState.vehicleIssues.unshift(newIssue);
+    localState.vehicleIssues.unshift(newIssue);
 
-  // Automatically update vehicle status to "Maintenance" when an issue is raised
-  if (newIssue.vehicleNo) {
-    await updateVehicleStatus(newIssue.vehicleNo, 'Maintenance');
-  }
-
-  localState.auditRecords.unshift({
-    id: `AUD-${Date.now()}`,
-    dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-    user: 'Admin User',
-    action: 'Issue Raised',
-    entity: 'Vehicle Issue',
-    entityId: newIssue.issueId,
-    details: `Raised ${newIssue.severity} severity issue for ${newIssue.vehicleNo}: ${newIssue.issue}`
-  });
-
-  saveLocalState();
-  recalculateChartData();
-  return newIssue;
-}
-
-export async function deleteVehicle(id) {
-  localState.vehicles = localState.vehicles.filter(v => v.id !== id && v.vehicleNo !== id);
-  localState.kpis.totalVehicles = Math.max(0, localState.kpis.totalVehicles - 1);
-  recalculateChartData();
-  return true;
-}
-
-export async function updateVehicleStatus(id, newStatus) {
-  const v = localState.vehicles.find(item => item.id === id || item.vehicleNo === id);
-  if (v) {
-    const oldStatus = v.status;
-    v.status = newStatus;
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-      if (!res.ok) {
-        await fetch(`${API_BASE_URL}/vehicles/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus })
-        });
-      }
-    } catch (err) {
-      console.log('Local store vehicle status update fallback');
+    if (newIssue.vehicleNo) {
+      await updateVehicleStatus(newIssue.vehicleNo, 'Maintenance');
     }
-
-    let active = 0;
-    let inactive = 0;
-    localState.vehicles.forEach(item => {
-      if (item.status === 'Active') active++;
-      else inactive++;
-    });
-    localState.kpis.activeVehicles = active;
-    localState.kpis.inactiveVehicles = inactive;
 
     localState.auditRecords.unshift({
       id: `AUD-${Date.now()}`,
       dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
       user: 'Admin User',
-      action: 'Vehicle Updated',
-      entity: 'Vehicle',
-      entityId: v.vehicleNo || v.id,
-      details: `Updated status from ${oldStatus} to ${newStatus}`
+      action: 'Issue Raised',
+      entity: 'Vehicle Issue',
+      entityId: newIssue.issueId,
+      details: `Raised ${newIssue.severity} severity issue for ${newIssue.vehicleNo}: ${newIssue.issue}`
     });
+
     saveLocalState();
+    recalculateChartData();
+    return newIssue;
+  } catch (err) {
+    showToast(`API Error (Raise Issue): ${err.message}`, 'error');
+    throw err;
   }
-  return v;
 }
 
-export async function deleteFuelRecord(id) {
+/**
+ * PUT /maintenance/{issueId}
+ */
+export async function updateIssueStatus(issueId, newStatus) {
   try {
-    await fetch(`${API_BASE_URL}/fuel/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE_URL}/maintenance/${issueId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    const updated = await handleResponse(res, 'Failed to update issue status');
+    showToast(`Issue ${issueId} updated to '${newStatus}'`, 'success');
+
+    const issue = localState.vehicleIssues.find(i => i.issueId === issueId || i.id === issueId);
+    if (issue) {
+      const oldStatus = issue.status;
+      issue.status = updated.status || newStatus;
+
+      if ((newStatus === 'Completed' || newStatus === 'Resolved' || newStatus === 'Closed') && issue.vehicleNo) {
+        await updateVehicleStatus(issue.vehicleNo, 'Active');
+      }
+
+      localState.auditRecords.unshift({
+        id: `AUD-${Date.now()}`,
+        dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        user: 'Admin User',
+        action: 'Issue Status Updated',
+        entity: 'Vehicle Issue',
+        entityId: issue.issueId,
+        details: `Updated status for ${issue.issueId} (${issue.vehicleNo}) from ${oldStatus} to ${newStatus}`
+      });
+      saveLocalState();
+    }
+    return issue;
   } catch (err) {
-    console.log('DB delete fallback to local storage:', err);
+    showToast(`API Error (Update Issue): ${err.message}`, 'error');
+    throw err;
   }
-  localState.fuelRecords = localState.fuelRecords.filter(f => f.id !== id);
-  recalculateChartData();
-  return true;
 }
 
 export async function resolveIssue(issueId) {
-  return await updateIssueStatus(issueId, 'Resolved');
-}
-
-export async function updateIssueStatus(issueId, newStatus) {
-  const issue = localState.vehicleIssues.find(i => i.issueId === issueId || i.id === issueId);
-  if (issue) {
-    const oldStatus = issue.status;
-    issue.status = newStatus;
-
-    try {
-      await fetch(`${API_BASE_URL}/issues/${issueId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-    } catch (err) {
-      console.log('Local store issue status update fallback');
-    }
-
-    // Automatically update vehicle status to "Out of Service" when issue is Resolved or Closed
-    if ((newStatus === 'Resolved' || newStatus === 'Closed') && issue.vehicleNo) {
-      await updateVehicleStatus(issue.vehicleNo, 'Out of Service');
-    }
-
-    localState.auditRecords.unshift({
-      id: `AUD-${Date.now()}`,
-      dateTime: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-      user: 'Admin User',
-      action: 'Issue Status Updated',
-      entity: 'Vehicle Issue',
-      entityId: issue.issueId,
-      details: `Updated status for ${issue.issueId} (${issue.vehicleNo}) from ${oldStatus} to ${newStatus}`
-    });
-    saveLocalState();
-  }
-  return issue;
+  return await updateIssueStatus(issueId, 'Completed');
 }
 
 export function recalculateChartData() {
@@ -466,13 +580,6 @@ export function recalculateChartData() {
     labels: ["21 Aug", "22 Aug", "23 Aug", "24 Aug", "25 Aug", "26 Aug", "27 Aug"],
     values: [0, 0, 0, 0, 0, 0, Math.round(totalLiters)]
   };
-
-  // Update total KPIs
-  localState.kpis.fuelConsumedLiters = Math.round(sumTypeLiters);
-  localState.kpis.totalVehicles = vehicles.length;
-  localState.kpis.activeVehicles = vehicles.filter(v => v.status === 'Active').length;
-  localState.kpis.inactiveVehicles = vehicles.filter(v => v.status !== 'Active').length;
-  localState.kpis.fuelSpendRupees = fuelRecords.reduce((acc, r) => acc + (r.amount || 0), 0);
 
   saveLocalState();
 }

@@ -1412,3 +1412,72 @@ a {
   font-weight: 500;
   line-height: 1.35;
 }
+
+/* ==========================================================================
+   TOAST NOTIFICATION SYSTEM FOR API FAILURE & SUCCESS MESSAGES
+   ========================================================================== */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+  animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transition: all 0.3s ease;
+  line-height: 1.4;
+}
+
+.toast svg {
+  flex-shrink: 0;
+}
+
+.toast-error {
+  background-color: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #991B1B;
+}
+
+[data-theme="dark"] .toast-error {
+  background-color: #450A0A;
+  border: 1px solid #991B1B;
+  color: #FCA5A5;
+}
+
+.toast-success {
+  background-color: #ECFDF5;
+  border: 1px solid #6EE7B7;
+  color: #065F46;
+}
+
+[data-theme="dark"] .toast-success {
+  background-color: #064E3B;
+  border: 1px solid #047857;
+  color: #A7F3D0;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
