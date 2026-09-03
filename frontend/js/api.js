@@ -157,13 +157,19 @@ export async function fetchVehicles() {
     
     if (Array.isArray(data)) {
       localState.vehicles = data.map(v => ({
-        id: v.v_id || v.id,
-        vehicleNo: v.license_plate || v.v_id,
-        type: v.vehicle_type || v.model || 'Compactor',
+        id: v.vehicle_code || v.v_id || v.id,
+        vehicle_code: v.vehicle_code || v.v_id,
+        vehicleNo: v.vehicleNo || v.license_plate || v.v_id,
+        brand: v.brand || v.make || 'Tata',
+        type: v.vehicleType || v.vehicle_type || v.model || 'Refuse Compactor Vehicle',
+        vehicleType: v.vehicleType || v.vehicle_type || 'Refuse Compactor Vehicle',
+        fuelType: v.fuelType || v.fuel_type || 'Diesel',
+        serviceDueFreq: v.serviceDueFreq || v.service_due_freq || 30,
+        serviceDueKm: v.serviceDueKm || v.service_due_km || 5000,
+        ward: v.ward || 1,
         status: v.status || 'Active',
-        lastService: v.updated_at ? new Date(v.updated_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '12 Aug 2025',
+        lastService: v.updated_at ? new Date(v.updated_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent',
         driver: 'Assigned Driver',
-        fuelType: v.fuel_type || 'Diesel',
         mileage: Number(v.current_mileage || 0)
       }));
       saveLocalState();
@@ -185,28 +191,40 @@ export async function addVehicle(vehicleData) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        v_id: vehicleData.vehicleNo,
+        vehicle_code: vehicleData.vehicle_code || vehicleData.vehicleNo,
+        v_id: vehicleData.vehicle_code || vehicleData.vehicleNo,
+        vehicleNo: vehicleData.vehicleNo,
         license_plate: vehicleData.vehicleNo,
-        make: vehicleData.make || 'Tata',
-        model: vehicleData.type || 'Compactor',
-        year: 2024,
-        vehicle_type: vehicleData.type,
+        brand: vehicleData.brand || 'Tata',
+        make: vehicleData.brand || 'Tata',
+        vehicleType: vehicleData.vehicleType || vehicleData.type,
+        vehicle_type: vehicleData.vehicleType || vehicleData.type,
+        fuelType: vehicleData.fuelType,
         fuel_type: vehicleData.fuelType,
+        serviceDueFreq: Number(vehicleData.serviceDueFreq || 30),
+        serviceDueKm: Number(vehicleData.serviceDueKm || 5000),
+        ward: Number(vehicleData.ward || 1),
         status: vehicleData.status || 'Active',
         current_mileage: Number(vehicleData.mileage || 0)
       })
     });
     const saved = await handleResponse(res, 'Failed to add vehicle');
-    showToast(`Vehicle '${saved.license_plate}' created in backend!`, 'success');
+    showToast(`Vehicle '${saved.vehicleNo || saved.license_plate}' created successfully!`, 'success');
 
     const newV = {
-      id: saved.v_id || saved.id,
-      vehicleNo: saved.license_plate || saved.v_id,
-      type: saved.vehicle_type || vehicleData.type,
+      id: saved.vehicle_code || saved.v_id || saved.id,
+      vehicle_code: saved.vehicle_code || saved.v_id,
+      vehicleNo: saved.vehicleNo || saved.license_plate || saved.v_id,
+      brand: saved.brand || saved.make || 'Tata',
+      type: saved.vehicleType || saved.vehicle_type || vehicleData.type,
+      vehicleType: saved.vehicleType || saved.vehicle_type || vehicleData.type,
+      fuelType: saved.fuelType || saved.fuel_type || vehicleData.fuelType || 'Diesel',
+      serviceDueFreq: saved.serviceDueFreq || saved.service_due_freq || 30,
+      serviceDueKm: saved.serviceDueKm || saved.service_due_km || 5000,
+      ward: saved.ward || 1,
       status: saved.status || 'Active',
       lastService: 'Just now',
       driver: vehicleData.driver || 'Admin Assigned',
-      fuelType: saved.fuel_type || vehicleData.fuelType || 'Diesel',
       mileage: Number(saved.current_mileage || 0)
     };
 
@@ -219,7 +237,7 @@ export async function addVehicle(vehicleData) {
       action: 'Vehicle Added',
       entity: 'Vehicle',
       entityId: newV.vehicleNo,
-      details: `Added new ${newV.type} vehicle (${newV.vehicleNo})`
+      details: `Added new ${newV.type} vehicle (${newV.vehicle_code})`
     });
 
     saveLocalState();
@@ -512,11 +530,16 @@ export function recalculateChartData() {
   const vehicles = localState.vehicles || [];
   const fuelRecords = localState.fuelRecords || [];
 
+  const allowedTypes = ["Pushcart", "EV Auto", "Tata Ace", "Tractor", "Refuse Compactor Vehicle"];
+  const allowedFuels = ["Petrol", "Diesel", "Electric Charge"];
+
   // 1. Fuel by Vehicle Type
-  const typeTotals = { Compactor: 0, Tipper: 0, Tractor: 0, Loader: 0 };
+  const typeTotals = {};
+  allowedTypes.forEach(t => typeTotals[t] = 0);
+
   fuelRecords.forEach(rec => {
-    const v = vehicles.find(item => item.vehicleNo === rec.vehicleNo || item.id === rec.vehicleNo);
-    const vType = v ? v.type : (rec.vehicleType || 'Compactor');
+    const v = vehicles.find(item => item.vehicleNo === rec.vehicleNo || item.id === rec.vehicleNo || item.vehicle_code === rec.vehicleNo);
+    const vType = v ? (v.vehicleType || v.type) : (rec.vehicleType || 'Refuse Compactor Vehicle');
     if (typeTotals[vType] !== undefined) {
       typeTotals[vType] += rec.liters;
     } else {
@@ -527,14 +550,16 @@ export function recalculateChartData() {
   const sumTypeLiters = Object.values(typeTotals).reduce((a, b) => a + b, 0);
 
   localState.chartData.fuelByVehicleType = {
-    labels: ["Compactor", "Tipper", "Tractor", "Loader"],
-    values: ["Compactor", "Tipper", "Tractor", "Loader"].map(t => Math.round(typeTotals[t] || 0)),
-    percentages: ["Compactor", "Tipper", "Tractor", "Loader"].map(t => sumTypeLiters > 0 ? Number((( (typeTotals[t] || 0) / sumTypeLiters) * 100).toFixed(1)) : 0),
-    colors: ["#3B82F6", "#A855F7", "#EAB308", "#22C55E"]
+    labels: allowedTypes,
+    values: allowedTypes.map(t => Math.round(typeTotals[t] || 0)),
+    percentages: allowedTypes.map(t => sumTypeLiters > 0 ? Number((((typeTotals[t] || 0) / sumTypeLiters) * 100).toFixed(1)) : 0),
+    colors: ["#3B82F6", "#A855F7", "#EAB308", "#22C55E", "#EC4899"]
   };
 
-  // 2. Fuel Type Distribution (Diesel vs CNG)
-  const fuelTypeTotals = { Diesel: 0, CNG: 0 };
+  // 2. Fuel Type Distribution
+  const fuelTypeTotals = {};
+  allowedFuels.forEach(f => fuelTypeTotals[f] = 0);
+
   fuelRecords.forEach(rec => {
     const fType = rec.fuelType || 'Diesel';
     if (fuelTypeTotals[fType] !== undefined) {
@@ -544,29 +569,27 @@ export function recalculateChartData() {
     }
   });
 
-  const sumFuelType = (fuelTypeTotals.Diesel + fuelTypeTotals.CNG);
+  const sumFuelType = Object.values(fuelTypeTotals).reduce((a, b) => a + b, 0);
 
   localState.chartData.fuelTypeDistribution = {
-    labels: ["Diesel", "CNG"],
-    values: [Math.round(fuelTypeTotals.Diesel), Math.round(fuelTypeTotals.CNG)],
-    percentages: [
-      sumFuelType > 0 ? Number(((fuelTypeTotals.Diesel / sumFuelType) * 100).toFixed(1)) : 0,
-      sumFuelType > 0 ? Number(((fuelTypeTotals.CNG / sumFuelType) * 100).toFixed(1)) : 0
-    ],
-    colors: ["#2563EB", "#10B981"]
+    labels: allowedFuels,
+    values: allowedFuels.map(f => Math.round(fuelTypeTotals[f] || 0)),
+    percentages: allowedFuels.map(f => sumFuelType > 0 ? Number((((fuelTypeTotals[f] || 0) / sumFuelType) * 100).toFixed(1)) : 0),
+    colors: ["#2563EB", "#10B981", "#F59E0B"]
   };
 
   // 3. Fleet Efficiency (km/L per vehicle type)
-  const typeCounts = { Compactor: 0, Tipper: 0, Tractor: 0, Loader: 0, Truck: 0 };
+  const typeCounts = {};
+  allowedTypes.forEach(t => typeCounts[t] = 0);
   vehicles.forEach(v => {
-    const t = v.type || 'Compactor';
+    const t = v.vehicleType || v.type || 'Refuse Compactor Vehicle';
     if (typeCounts[t] !== undefined) typeCounts[t] += 1;
     else typeCounts[t] = 1;
   });
 
   localState.chartData.fleetEfficiency = {
-    labels: ["Compactor", "Tipper", "Tractor", "Loader", "Truck"],
-    values: ["Compactor", "Tipper", "Tractor", "Loader", "Truck"].map(t => {
+    labels: allowedTypes,
+    values: allowedTypes.map(t => {
       const count = typeCounts[t] || 0;
       return count > 0 ? 8.0 : 0;
     }),

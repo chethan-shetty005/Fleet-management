@@ -104,13 +104,11 @@
             <span class="filter-label">Vehicle Type</span>
             <select class="filter-select" id="filterType">
               <option value="All">All Types</option>
-              <option value="Compactor">Compactor</option>
-              <option value="Tipper">Tipper</option>
+              <option value="Pushcart">Pushcart</option>
+              <option value="EV Auto">EV Auto</option>
+              <option value="Tata Ace">Tata Ace</option>
               <option value="Tractor">Tractor</option>
-              <option value="Loader">Loader</option>
-              <option value="Truck">Truck</option>
-              <option value="Earth Mover">Earth Mover</option>
-              <option value="Electric Van">Electric Van</option>
+              <option value="Refuse Compactor Vehicle">Refuse Compactor Vehicle</option>
             </select>
           </div>
 
@@ -122,7 +120,6 @@
               <option value="Inactive">Inactive</option>
               <option value="Maintenance">Maintenance</option>
               <option value="Out of Service">Out of Service</option>
-              <option value="En-Route">En-Route</option>
             </select>
           </div>
 
@@ -130,21 +127,26 @@
             <span class="filter-label">Fuel Type</span>
             <select class="filter-select" id="filterFuelType">
               <option value="All">All Fuel Types</option>
-              <option value="Diesel">Diesel</option>
-              <option value="CNG">CNG</option>
-              <option value="Electric">Electric</option>
               <option value="Petrol">Petrol</option>
-              <option value="Hybrid">Hybrid</option>
+              <option value="Diesel">Diesel</option>
+              <option value="Electric Charge">Electric Charge</option>
             </select>
           </div>
 
           <div class="filter-group">
-            <span class="filter-label">Issue Severity</span>
-            <select class="filter-select" id="filterSeverity">
-              <option value="All">All Severities</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
+            <span class="filter-label">Ward</span>
+            <select class="filter-select" id="filterWard">
+              <option value="All">All Wards</option>
+              <option value="1">Ward 1</option>
+              <option value="2">Ward 2</option>
+              <option value="3">Ward 3</option>
+              <option value="4">Ward 4</option>
+              <option value="5">Ward 5</option>
+              <option value="6">Ward 6</option>
+              <option value="7">Ward 7</option>
+              <option value="8">Ward 8</option>
+              <option value="9">Ward 9</option>
+              <option value="10">Ward 10</option>
             </select>
           </div>
 
@@ -247,10 +249,13 @@
               <table class="data-table">
                 <thead>
                   <tr>
+                    <th>Vehicle Code</th>
                     <th>Vehicle No.</th>
+                    <th>Brand</th>
                     <th>Type</th>
+                    <th>Fuel Type</th>
+                    <th>Ward</th>
                     <th>Status</th>
-                    <th>Last Service</th>
                     <th style="text-align: right;">Actions</th>
                   </tr>
                 </thead>
@@ -456,45 +461,54 @@
       <form id="addVehicleForm">
         <div class="modal-body">
           <div class="form-group">
+            <label class="form-label">Vehicle Code / ID</label>
+            <input type="text" name="vehicle_code" class="form-input" placeholder="e.g. VH-001" required>
+          </div>
+          <div class="form-group">
             <label class="form-label">Vehicle Registration No.</label>
-            <input type="text" name="vehicleNo" class="form-input" placeholder="e.g. KA01AB9999" required>
+            <input type="text" name="vehicleNo" class="form-input" placeholder="e.g. KA09AB1234" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Brand</label>
+            <input type="text" name="brand" class="form-input" placeholder="e.g. Tata" value="Tata" required>
           </div>
           <div class="form-group">
             <label class="form-label">Vehicle Type</label>
             <select name="type" id="addVehicleTypeSelect" class="form-select" required>
-              <option value="Compactor">Compactor</option>
-              <option value="Tipper">Tipper</option>
+              <option value="Pushcart">Pushcart</option>
+              <option value="EV Auto">EV Auto</option>
+              <option value="Tata Ace">Tata Ace</option>
               <option value="Tractor">Tractor</option>
-              <option value="Loader">Loader</option>
-              <option value="Truck">Truck</option>
-              <option value="Earth Mover">Earth Mover</option>
-              <option value="Electric Van">Electric Van</option>
-              <option value="Other">Other (Custom Type...)</option>
+              <option value="Refuse Compactor Vehicle" selected>Refuse Compactor Vehicle</option>
             </select>
-          </div>
-          <div class="form-group" id="customVehicleTypeGroup" style="display: none;">
-            <label class="form-label">Custom Vehicle Type Name</label>
-            <input type="text" id="customVehicleTypeInput" name="customType" class="form-input"
-              placeholder="e.g. Sweeper, Water Tanker, Ambulance" maxlength="50">
           </div>
           <div class="form-group">
             <label class="form-label">Fuel Type</label>
             <select name="fuelType" class="form-select" required>
-              <option value="Diesel">Diesel</option>
-              <option value="CNG">CNG</option>
-              <option value="Electric">Electric</option>
               <option value="Petrol">Petrol</option>
-              <option value="Hybrid">Hybrid</option>
+              <option value="Diesel" selected>Diesel</option>
+              <option value="Electric Charge">Electric Charge</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Service Due Frequency (Days)</label>
+            <input type="number" name="serviceDueFreq" class="form-input" value="30" placeholder="e.g. 30" required min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Service Due Distance (KM)</label>
+            <input type="number" name="serviceDueKm" class="form-input" value="5000" placeholder="e.g. 5000" required min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Assigned Ward</label>
+            <input type="number" name="ward" class="form-input" value="1" placeholder="e.g. 7" required min="0">
           </div>
           <div class="form-group">
             <label class="form-label">Status</label>
             <select name="status" class="form-select">
-              <option value="Active">Active</option>
+              <option value="Active" selected>Active</option>
               <option value="Inactive">Inactive</option>
               <option value="Maintenance">Maintenance</option>
               <option value="Out of Service">Out of Service</option>
-              <option value="En-Route">En-Route</option>
             </select>
           </div>
           <div class="form-group">
@@ -503,7 +517,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Current Odometer (km)</label>
-            <input type="number" name="mileage" class="form-input" placeholder="e.g. 15000">
+            <input type="number" name="mileage" class="form-input" placeholder="e.g. 15000" value="0">
           </div>
         </div>
         <div class="modal-footer">
@@ -536,11 +550,9 @@
           <div class="form-group">
             <label class="form-label">Fuel Type</label>
             <select name="fuelType" class="form-select" required id="fuelModalFuelTypeSelect">
-              <option value="Diesel">Diesel</option>
-              <option value="CNG">CNG</option>
-              <option value="Electric">Electric</option>
               <option value="Petrol">Petrol</option>
-              <option value="Hybrid">Hybrid</option>
+              <option value="Diesel" selected>Diesel</option>
+              <option value="Electric Charge">Electric Charge</option>
             </select>
           </div>
           <div class="form-group">

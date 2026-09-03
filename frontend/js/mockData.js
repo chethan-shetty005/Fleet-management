@@ -17,44 +17,31 @@ export const INITIAL_KPIS = {
 };
 
 export const INITIAL_VEHICLES = [
-  { id: "KA01AB1234", vehicleNo: "KA01AB1234", type: "Compactor", status: "Active", lastService: "12 Aug 2025", driver: "Ramesh Kumar", fuelType: "Diesel", mileage: 42350 },
-  { id: "KA01CD5678", vehicleNo: "KA01CD5678", type: "Tipper", status: "Active", lastService: "08 Aug 2025", driver: "Suresh Patil", fuelType: "Diesel", mileage: 38200 },
-  { id: "KA01EF9012", vehicleNo: "KA01EF9012", type: "Tractor", status: "Inactive", lastService: "25 Jul 2025", driver: "Mahesh Singh", fuelType: "Diesel", mileage: 51900 },
-  { id: "KA01GH3456", vehicleNo: "KA01GH3456", type: "Compactor", status: "Active", lastService: "10 Aug 2025", driver: "Anand Verma", fuelType: "CNG", mileage: 29400 },
-  { id: "KA01IJ7890", vehicleNo: "KA01IJ7890", type: "Loader", status: "Active", lastService: "05 Aug 2025", driver: "Vijay Gowda", fuelType: "Diesel", mileage: 18750 },
-  { id: "KA01KL2345", vehicleNo: "KA01KL2345", type: "Compactor", status: "Maintenance", lastService: "23 Aug 2025", driver: "Praveen R", fuelType: "Diesel", mileage: 64100 },
-  { id: "KA01MN5678", vehicleNo: "KA01MN5678", type: "Tipper", status: "Active", lastService: "22 Aug 2025", driver: "Kiran Naik", fuelType: "Diesel", mileage: 31050 },
-  { id: "KA01EV1111", vehicleNo: "KA01EV1111", type: "Electric Van", status: "Active", lastService: "20 Aug 2025", driver: "Sunil Dutt", fuelType: "Electric", mileage: 12400 },
-  { id: "KA01PT2222", vehicleNo: "KA01PT2222", type: "Patrol Car", status: "Active", lastService: "18 Aug 2025", driver: "Rajesh Rao", fuelType: "Petrol", mileage: 21500 },
-  { id: "KA01HB3333", vehicleNo: "KA01HB3333", type: "Hybrid Truck", status: "Active", lastService: "24 Aug 2025", driver: "Deepak S", fuelType: "Hybrid", mileage: 15300 }
+  { id: "VH001", vehicle_code: "VH001", vehicleNo: "KA01AB1234", brand: "Tata", type: "Refuse Compactor Vehicle", vehicleType: "Refuse Compactor Vehicle", status: "Active", lastService: "12 Aug 2025", driver: "Ramesh Kumar", fuelType: "Diesel", serviceDueFreq: 30, serviceDueKm: 5000, ward: 1, mileage: 42350 },
+  { id: "VH002", vehicle_code: "VH002", vehicleNo: "KA01CD5678", brand: "Mahindra", type: "Tractor", vehicleType: "Tractor", status: "Active", lastService: "08 Aug 2025", driver: "Suresh Patil", fuelType: "Diesel", serviceDueFreq: 30, serviceDueKm: 5000, ward: 2, mileage: 38200 },
+  { id: "VH003", vehicle_code: "VH003", vehicleNo: "KA01EF9012", brand: "Tata", type: "Tata Ace", vehicleType: "Tata Ace", status: "Inactive", lastService: "25 Jul 2025", driver: "Mahesh Singh", fuelType: "Petrol", serviceDueFreq: 60, serviceDueKm: 10000, ward: 3, mileage: 51900 },
+  { id: "VH004", vehicle_code: "VH004", vehicleNo: "KA01GH3456", brand: "Piaggio", type: "EV Auto", vehicleType: "EV Auto", status: "Active", lastService: "10 Aug 2025", driver: "Anand Verma", fuelType: "Electric Charge", serviceDueFreq: 45, serviceDueKm: 8000, ward: 4, mileage: 29400 },
+  { id: "VH005", vehicle_code: "VH005", vehicleNo: "KA01IJ7890", brand: "Local", type: "Pushcart", vehicleType: "Pushcart", status: "Active", lastService: "05 Aug 2025", driver: "Vijay Gowda", fuelType: "Electric Charge", serviceDueFreq: 90, serviceDueKm: 2000, ward: 5, mileage: 18750 },
+  { id: "VH006", vehicle_code: "VH006", vehicleNo: "KA01KL2345", brand: "Tata", type: "Refuse Compactor Vehicle", vehicleType: "Refuse Compactor Vehicle", status: "Maintenance", lastService: "23 Aug 2025", driver: "Praveen R", fuelType: "Diesel", serviceDueFreq: 30, serviceDueKm: 5000, ward: 1, mileage: 64100 },
+  { id: "VH007", vehicle_code: "VH007", vehicleNo: "KA01MN5678", brand: "Mahindra", type: "Tractor", vehicleType: "Tractor", status: "Active", lastService: "22 Aug 2025", driver: "Kiran Naik", fuelType: "Diesel", serviceDueFreq: 30, serviceDueKm: 5000, ward: 2, mileage: 31050 }
 ];
 
 export const INITIAL_FUEL_RECORDS = [
-  { id: "FR-2025-0845", date: "27 Aug 2025", vehicleNo: "KA01EV1111", fuelType: "Electric", liters: 95.00, amount: 2850.00 },
-  { id: "FR-2025-0844", date: "27 Aug 2025", vehicleNo: "KA01PT2222", fuelType: "Petrol", liters: 85.00, amount: 8925.00 },
-  { id: "FR-2025-0843", date: "26 Aug 2025", vehicleNo: "KA01HB3333", fuelType: "Hybrid", liters: 65.00, amount: 4875.00 },
+  { id: "FR-2025-0845", date: "27 Aug 2025", vehicleNo: "KA01GH3456", fuelType: "Electric Charge", liters: 95.00, amount: 2850.00 },
+  { id: "FR-2025-0844", date: "27 Aug 2025", vehicleNo: "KA01EF9012", fuelType: "Petrol", liters: 85.00, amount: 8925.00 },
   { id: "FR-2025-0842", date: "27 Aug 2025", vehicleNo: "KA01AB1234", fuelType: "Diesel", liters: 120.00, amount: 7200.00 },
-  { id: "FR-2025-0841", date: "27 Aug 2025", vehicleNo: "KA01CD5678", fuelType: "Diesel", liters: 150.00, amount: 9000.00 },
-  { id: "FR-2025-0840", date: "26 Aug 2025", vehicleNo: "KA01EF9012", fuelType: "Diesel", liters: 80.00, amount: 4800.00 },
-  { id: "FR-2025-0839", date: "26 Aug 2025", vehicleNo: "KA01GH3456", fuelType: "CNG", liters: 110.00, amount: 6600.00 },
-  { id: "FR-2025-0838", date: "25 Aug 2025", vehicleNo: "KA01IJ7890", fuelType: "Diesel", liters: 90.00, amount: 5400.00 },
-  { id: "FR-2025-0837", date: "25 Aug 2025", vehicleNo: "KA01KL2345", fuelType: "Diesel", liters: 135.00, amount: 8100.00 }
+  { id: "FR-2025-0841", date: "27 Aug 2025", vehicleNo: "KA01CD5678", fuelType: "Diesel", liters: 150.00, amount: 9000.00 }
 ];
 
 export const INITIAL_VEHICLE_ISSUES = [
   { id: "IS-1023", issueId: "IS-1023", vehicleNo: "KA01GH3456", issue: "Hydraulic system leak", severity: "High", status: "Open", reportedOn: "24 Aug 2025" },
   { id: "IS-1022", issueId: "IS-1022", vehicleNo: "KA01KL2345", issue: "Engine overheating", severity: "Medium", status: "In Progress", reportedOn: "23 Aug 2025" },
-  { id: "IS-1021", issueId: "IS-1021", vehicleNo: "KA01MN5678", issue: "Brake adjustment required", severity: "Low", status: "Open", reportedOn: "22 Aug 2025" },
-  { id: "IS-1020", issueId: "IS-1020", vehicleNo: "KA01OP9012", issue: "Tyre wear", severity: "Low", status: "Resolved", reportedOn: "20 Aug 2025" },
-  { id: "IS-1019", issueId: "IS-1019", vehicleNo: "KA01QR3456", issue: "Electrical wiring issue", severity: "Medium", status: "Closed", reportedOn: "19 Aug 2025" }
+  { id: "IS-1021", issueId: "IS-1021", vehicleNo: "KA01MN5678", issue: "Brake adjustment required", severity: "Low", status: "Open", reportedOn: "22 Aug 2025" }
 ];
 
 export const INITIAL_AUDIT_RECORDS = [
   { id: "AUD-1001", dateTime: "27 Aug 2025 10:45 AM", user: "Admin User", action: "Fuel Added", entity: "Fuel Record", entityId: "FR-2025-0842", details: "Added 120.00 L for KA01AB1234" },
-  { id: "AUD-1002", dateTime: "27 Aug 2025 10:30 AM", user: "Admin User", action: "Vehicle Updated", entity: "Vehicle", entityId: "KA01AB1234", details: "Updated status to Active" },
-  { id: "AUD-1003", dateTime: "27 Aug 2025 09:15 AM", user: "Admin User", action: "Issue Updated", entity: "Vehicle Issue", entityId: "IS-1023", details: "Changed status to In Progress" },
-  { id: "AUD-1004", dateTime: "26 Aug 2025 04:22 PM", user: "Admin User", action: "Fuel Deleted", entity: "Fuel Record", entityId: "FR-2025-0831", details: "Deleted 60.00 L record" },
-  { id: "AUD-1005", dateTime: "26 Aug 2025 11:05 AM", user: "Admin User", action: "Vehicle Added", entity: "Vehicle", entityId: "KA01ST6789", details: "New vehicle added" }
+  { id: "AUD-1002", dateTime: "27 Aug 2025 10:30 AM", user: "Admin User", action: "Vehicle Updated", entity: "Vehicle", entityId: "KA01AB1234", details: "Updated status to Active" }
 ];
 
 export const CHART_DATA = {
@@ -63,20 +50,21 @@ export const CHART_DATA = {
     values: [7200, 6800, 8100, 8400, 8300, 9800, 9100]
   },
   fuelByVehicleType: {
-    labels: ["Compactor", "Tipper", "Tractor", "Loader"],
-    values: [5650, 3250, 1950, 1600],
-    percentages: [45.4, 26.1, 15.7, 12.8],
-    colors: ["#3B82F6", "#A855F7", "#EAB308", "#22C55E"]
+    labels: ["Pushcart", "EV Auto", "Tata Ace", "Tractor", "Refuse Compactor Vehicle"],
+    values: [1200, 2400, 3100, 3950, 5650],
+    percentages: [7.4, 14.7, 19.0, 24.2, 34.7],
+    colors: ["#3B82F6", "#A855F7", "#EAB308", "#22C55E", "#EC4899"]
   },
   fleetEfficiency: {
-    labels: ["Compactor", "Tipper", "Tractor", "Loader", "Truck"],
-    values: [8.6, 7.4, 6.8, 8.1, 7.2],
+    labels: ["Pushcart", "EV Auto", "Tata Ace", "Tractor", "Refuse Compactor Vehicle"],
+    values: [9.5, 9.0, 8.2, 7.1, 6.5],
     color: "#22C55E"
   },
   fuelTypeDistribution: {
-    labels: ["Diesel", "CNG"],
-    values: [9850, 2600],
-    percentages: [79.1, 20.9],
-    colors: ["#2563EB", "#10B981"]
+    labels: ["Petrol", "Diesel", "Electric Charge"],
+    values: [3100, 9600, 3600],
+    percentages: [19.0, 58.9, 22.1],
+    colors: ["#2563EB", "#10B981", "#F59E0B"]
   }
 };
+

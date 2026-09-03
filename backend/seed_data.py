@@ -25,53 +25,80 @@ def seed_database():
         v1 = Vehicle(
             v_id="VH001",
             license_plate="KA01AB1234",
-            vin="1FTFW1ED4MFC12345",
-            make="Ford",
-            model="F-150 Lightning",
+            brand="Tata",
+            make="Tata",
+            model="Refuse Compactor Vehicle",
             year=2023,
-            vehicle_type="Truck",
-            fuel_type="Electric",
+            vehicle_type="Refuse Compactor Vehicle",
+            fuel_type="Diesel",
+            service_due_freq=30,
+            service_due_km=5000,
+            ward=1,
             status="Active",
             current_mileage=14250.0
         )
         v2 = Vehicle(
             v_id="VH002",
             license_plate="FLT-202",
-            vin="1FUJA6CV8DL567890",
-            make="Freightliner",
-            model="Cascadia",
+            brand="Mahindra",
+            make="Mahindra",
+            model="Tractor",
             year=2022,
             vehicle_type="Tractor",
             fuel_type="Diesel",
+            service_due_freq=30,
+            service_due_km=5000,
+            ward=2,
             status="Active",
             current_mileage=87400.5
         )
         v3 = Vehicle(
             v_id="VH003",
             license_plate="FLT-303",
-            vin="YV1A42CL9N1987654",
-            make="Caterpillar",
-            model="D8T",
+            brand="Tata",
+            make="Tata",
+            model="Tata Ace",
             year=2021,
-            vehicle_type="Earth Mover",
-            fuel_type="Diesel",
+            vehicle_type="Tata Ace",
+            fuel_type="Petrol",
+            service_due_freq=60,
+            service_due_km=10000,
+            ward=3,
             status="Maintenance",
             current_mileage=11200.0
         )
         v4 = Vehicle(
             v_id="VH004",
             license_plate="FLT-404",
-            vin="5YJSA1E28HF345678",
-            make="Tesla",
-            model="Semi",
+            brand="Piaggio",
+            make="Piaggio",
+            model="EV Auto",
             year=2024,
-            vehicle_type="Truck",
-            fuel_type="Electric",
+            vehicle_type="EV Auto",
+            fuel_type="Electric Charge",
+            service_due_freq=45,
+            service_due_km=8000,
+            ward=4,
             status="Active",
             current_mileage=5300.2
         )
+        v5 = Vehicle(
+            v_id="VH005",
+            license_plate="FLT-505",
+            brand="Local",
+            make="Local",
+            model="Pushcart",
+            year=2024,
+            vehicle_type="Pushcart",
+            fuel_type="Electric Charge",
+            service_due_freq=90,
+            service_due_km=2000,
+            ward=5,
+            status="Active",
+            current_mileage=1200.0
+        )
 
-        db.add_all([v1, v2, v3, v4])
+        db.add_all([v1, v2, v3, v4, v5])
         db.commit()
 
         # Refresh to get IDs

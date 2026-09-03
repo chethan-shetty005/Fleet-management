@@ -60,12 +60,13 @@ function updateVehicleTypeSelects() {
   const filterTypeSelect = document.getElementById('filterType');
   const addVehicleTypeSelect = document.getElementById('addVehicleTypeSelect');
 
-  const defaultTypes = ["Compactor", "Tipper", "Tractor", "Loader", "Truck", "Earth Mover", "Electric Van"];
+  const defaultTypes = ["Pushcart", "EV Auto", "Tata Ace", "Tractor", "Refuse Compactor Vehicle"];
   const customTypes = [];
 
   state.vehicles.forEach(v => {
-    if (v.type && !defaultTypes.includes(v.type) && !customTypes.includes(v.type) && v.type !== 'Other') {
-      customTypes.push(v.type);
+    const t = v.vehicleType || v.type;
+    if (t && !defaultTypes.includes(t) && !customTypes.includes(t) && t !== 'Other') {
+      customTypes.push(t);
     }
   });
 
@@ -84,9 +85,8 @@ function updateVehicleTypeSelects() {
     addVehicleTypeSelect.innerHTML = `
       ${defaultTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
       ${customTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
-      <option value="Other">Other (Custom Type...)</option>
     `;
-    addVehicleTypeSelect.value = currentAddTypeVal || 'Compactor';
+    addVehicleTypeSelect.value = currentAddTypeVal || 'Refuse Compactor Vehicle';
   }
 }
 
@@ -408,7 +408,7 @@ function renderVehiclesTable() {
   const countFooter = document.getElementById('footerVehiclesCount');
   if (!tbody) return;
 
-  const filtered = filterList(state.vehicles, ['vehicleNo', 'type', 'driver'], 'lastService');
+  const filtered = filterList(state.vehicles, ['vehicle_code', 'vehicleNo', 'brand', 'type', 'fuelType', 'driver'], 'lastService');
   if (countFooter) {
     if (filtered.length === 0) {
       countFooter.textContent = `Showing 0 of ${state.vehicles.length} vehicles`;
@@ -420,7 +420,7 @@ function renderVehiclesTable() {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 24px; color: #64748b;">
+        <td colspan="8" style="text-align: center; padding: 24px; color: #64748b;">
           <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <strong>No Data Found</strong>
@@ -448,15 +448,25 @@ function renderVehiclesTable() {
       </div>
     `).join('');
 
+    const vCode = v.vehicle_code || v.v_id || v.id;
+    const vBrand = v.brand || 'Tata';
+    const vType = v.vehicleType || v.type || 'Refuse Compactor Vehicle';
+    const vFuel = v.fuelType || 'Diesel';
+    const vWard = v.ward !== undefined ? v.ward : 1;
+
     return `
       <tr>
         <td>
           <div class="vehicle-cell">
             <svg class="vehicle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-            <strong>${v.vehicleNo}</strong>
+            <strong>${vCode}</strong>
           </div>
         </td>
-        <td>${v.type}</td>
+        <td><strong>${v.vehicleNo}</strong></td>
+        <td>${vBrand}</td>
+        <td>${vType}</td>
+        <td>${vFuel}</td>
+        <td>Ward ${vWard}</td>
         <td>
           <div class="custom-status-dropdown" data-id="${v.id || v.vehicleNo}">
             <button type="button" class="status-badge-trigger badge ${badgeClass}" aria-label="Select status for ${v.vehicleNo}">
@@ -469,7 +479,6 @@ function renderVehiclesTable() {
             </div>
           </div>
         </td>
-        <td>${v.lastService}</td>
         <td style="text-align: right;">
           <div class="action-btns" style="justify-content: flex-end;">
             <button class="action-icon-btn view-vehicle" data-id="${v.id}" title="View Details">
@@ -1190,17 +1199,20 @@ function setupEventListeners() {
 
     if (target.classList.contains('view-vehicle')) {
       const id = target.dataset.id;
-      const v = state.vehicles.find(item => item.id === id || item.vehicleNo === id);
+      const v = state.vehicles.find(item => item.id === id || item.vehicleNo === id || item.vehicle_code === id);
       if (v) {
-        openDetailModal(`Vehicle Details: ${v.vehicleNo}`, `
+        openDetailModal(`Vehicle Details: ${v.vehicle_code || v.vehicleNo}`, `
           <div style="display:flex; flex-direction:column; gap:10px; font-size:14px;">
+            <p><strong>Vehicle Code / ID:</strong> ${v.vehicle_code || v.id}</p>
             <p><strong>Registration No:</strong> ${v.vehicleNo}</p>
-            <p><strong>Type:</strong> ${v.type}</p>
-            <p><strong>Status:</strong> ${v.status}</p>
+            <p><strong>Brand:</strong> ${v.brand || 'Tata'}</p>
+            <p><strong>Vehicle Type:</strong> ${v.vehicleType || v.type}</p>
             <p><strong>Fuel Type:</strong> ${v.fuelType}</p>
-            <p><strong>Driver:</strong> ${v.driver}</p>
-            <p><strong>Last Service:</strong> ${v.lastService}</p>
-            <p><strong>Odometer:</strong> ${v.mileage.toLocaleString()} km</p>
+            <p><strong>Service Due Frequency:</strong> ${v.serviceDueFreq || 30} days</p>
+            <p><strong>Service Due Distance:</strong> ${v.serviceDueKm || 5000} km</p>
+            <p><strong>Assigned Ward:</strong> Ward ${v.ward || 1}</p>
+            <p><strong>Status:</strong> ${v.status}</p>
+            <p><strong>Odometer:</strong> ${(v.mileage || 0).toLocaleString()} km</p>
           </div>
         `);
       }

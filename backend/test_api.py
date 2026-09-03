@@ -57,22 +57,27 @@ def test_full_flow():
     print(f"✅ Search vehicle by v_id={v_id} passed")
 
     # Test Vehicle search by vehicle_type
-    res = client.get("/api/v1/vehicles?vehicle_type=Earth Mover")
+    res = client.get("/api/v1/vehicles?vehicle_type=Refuse Compactor Vehicle")
     assert res.status_code == 200
     search_by_type = res.json()
     assert len(search_by_type) >= 1
-    assert search_by_type[0]["vehicle_type"] == "Earth Mover"
-    print("✅ Search vehicle by vehicle_type=Earth Mover passed")
+    assert search_by_type[0]["vehicle_type"] == "Refuse Compactor Vehicle"
+    print("✅ Search vehicle by vehicle_type=Refuse Compactor Vehicle passed")
 
-    # POST create new vehicle (with vehicle_type="Earth Mover")
+    # POST create new vehicle (with vehicle_type="Refuse Compactor Vehicle")
     new_v = {
-        "v_id": "VH005",
+        "v_id": "VH006",
+        "vehicle_code": "VH006",
         "license_plate": "KA02CD5678",
-        "make": "Rivian",
-        "model": "EDV 700",
+        "brand": "Tata",
+        "make": "Tata",
+        "model": "Refuse Compactor Vehicle",
         "year": 2024,
-        "vehicle_type": "Earth Mover",
-        "fuel_type": "Electric",
+        "vehicle_type": "Refuse Compactor Vehicle",
+        "fuel_type": "Electric Charge",
+        "service_due_freq": 30,
+        "service_due_km": 5000,
+        "ward": 1,
         "status": "Active",
         "current_mileage": 100.0
     }
@@ -80,25 +85,15 @@ def test_full_flow():
     assert res.status_code == 201
     created_v = res.json()
     created_v_id = created_v["v_id"]
-    created_vin = created_v["vin"]
-    assert created_v_id == "VH005"
-    assert created_v["vehicle_type"] == "Earth Mover"
-    assert isinstance(created_vin, str)
-    assert len(created_vin) == 17
-    print(f"✅ POST vehicle created with auto-generated random VIN '{created_vin}'")
-
-    # Test VIN immutability via PATCH: attempting to change vin should fail with 400 Bad Request
-    res = client.patch(f"/api/v1/vehicles/{created_v_id}", json={"vin": "MODIFIED_VIN_1234"})
-    assert res.status_code == 400
-    assert "immutable" in res.json()["detail"].lower()
-    print("✅ PATCH vehicle attempt to update VIN correctly rejected (400 Bad Request)")
+    assert created_v_id == "VH006"
+    assert created_v["vehicle_type"] == "Refuse Compactor Vehicle"
+    print("✅ POST vehicle created successfully with WASTRAQ schema")
 
     # PUT update vehicle status
     res = client.put(f"/api/v1/vehicles/{created_v_id}", json={"status": "Maintenance"})
     assert res.status_code == 200
     assert res.json()["status"] == "Maintenance"
-    assert res.json()["vin"] == created_vin
-    print("✅ PUT vehicle updated status while preserving VIN intact")
+    print("✅ PUT vehicle updated status successfully")
 
 
     print("\n--- 4. Trips API ---")

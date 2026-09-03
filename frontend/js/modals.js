@@ -67,24 +67,24 @@ export function initModals({ onAddVehicle, onAddFuelRecord, onRaiseIssue }) {
   document.getElementById('addVehicleForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    let vehicleType = formData.get('type');
-    if (vehicleType === 'Other') {
-      const customType = formData.get('customType')?.trim();
-      vehicleType = customType || 'Custom';
-    }
 
     const vehicleData = {
-      vehicleNo: formData.get('vehicleNo'),
-      type: vehicleType,
+      vehicle_code: formData.get('vehicle_code')?.trim(),
+      vehicleNo: formData.get('vehicleNo')?.trim(),
+      brand: formData.get('brand')?.trim() || 'Tata',
+      vehicleType: formData.get('type') || formData.get('vehicleType'),
+      type: formData.get('type') || formData.get('vehicleType'),
       fuelType: formData.get('fuelType'),
-      status: formData.get('status'),
-      driver: formData.get('driver'),
-      mileage: formData.get('mileage')
+      serviceDueFreq: parseInt(formData.get('serviceDueFreq') || '30', 10),
+      serviceDueKm: parseInt(formData.get('serviceDueKm') || '5000', 10),
+      ward: parseInt(formData.get('ward') || '1', 10),
+      status: formData.get('status') || 'Active',
+      driver: formData.get('driver')?.trim() || '',
+      mileage: parseFloat(formData.get('mileage') || '0')
     };
     await onAddVehicle(vehicleData);
     addVehicleModal?.classList.remove('active');
     e.target.reset();
-    toggleCustomTypeInput();
   });
 
   // Form submission: Add Fuel Record
