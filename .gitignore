@@ -16,3 +16,4 @@ env/
 backend.log
 frontend.log
 
+.fuse_hidden*
